@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "edu-ciaa-nxp-debug",
+            "cwd": "${workspaceRoot}/.debug",
+            "executable": "${workspaceRoot}/out/app.elf",
+            "request": "attach",
+            "gdbTarget": "localhost:3333",
+            "type": "cortex-debug",
+            "servertype": "external"
+        }
+    ]
+}
