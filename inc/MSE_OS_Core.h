@@ -3,14 +3,23 @@
 
 #include <stdint.h>
 
-#define STACK_SIZE          64
-#define MAX_TASKS_N         8
-#define STACK_FRAME_SIZE	8
-#define INIT_XPSR 	        1 << 24				
-#define EXEC_RETURN	        0xFFFFFFF9
+#define STACK_SIZE                  64
+#define MAX_TASKS_N                 8
+#define STACK_FRAME_SIZE	        8
+#define FULL_REG_STACKING_SIZE      (STACK_FRAME_SIZE + 8)
+#define INIT_XPSR 	                1 << 24				
+#define EXEC_RETURN	                0xFFFFFFF9
 
 typedef struct {
-    uint32_t __stack[STACK_SIZE - STACK_FRAME_SIZE];
+    uint32_t __stack[STACK_SIZE - FULL_REG_STACKING_SIZE];
+    uint32_t r11;
+    uint32_t r10;
+    uint32_t r9;
+    uint32_t r8;
+    uint32_t r7;
+    uint32_t r6;
+    uint32_t r5;
+    uint32_t r4;
     uint32_t r0;
     uint32_t r1;
     uint32_t r2;

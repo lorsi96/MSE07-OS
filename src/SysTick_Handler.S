@@ -57,6 +57,7 @@ case0:
 	ldr r0,=sp_tarea1		//R0 = &sp_tarea1
 	ldr r1,[r0]				//R1 = *R0
 	msr msp,r1				//MSP = R1 ==> MSP = sp_tarea1
+	pop {R4-R11}
 	//break;
 	b case_end
 
@@ -65,6 +66,7 @@ case0:
 case1:
 	mov r1,2
 	str r1,[r0]		//estado = 2
+	push {r4-r11}
 
 	ldr r0,=sp_tarea1		//R0 = &sp_tarea1
 	mrs r1,msp				//R1 = MSP
@@ -73,6 +75,9 @@ case1:
 	ldr r0,=sp_tarea2		//R0 = &sp_tarea2
 	ldr r1,[r0]				//R1 = *R0
 	msr msp,r1				//MSP = R1 ==> MSP = sp_tarea1
+
+	pop {r4-r11}	
+
 	//break;
 	b case_end
 
@@ -81,6 +86,7 @@ case1:
 case2:
 	mov r1,1
 	str r1,[r0]		//estado = 1
+	push {r4-r11}
 
 	ldr r0,=sp_tarea2		//R0 = &sp_tarea2
 	mrs r1,msp				//R1 = MSP
@@ -89,6 +95,8 @@ case2:
 	ldr r0,=sp_tarea1		//R0 = &sp_tarea1
 	ldr r1,[r0]				//R1 = *R0
 	msr msp,r1				//MSP = R1 ==> MSP = sp_tarea1
+
+	pop {r4-r11}	
 
 case_end:
 	bx lr			//Branch indirecto, se carga en PC lo que hay el LR (EXEC_RETURN)

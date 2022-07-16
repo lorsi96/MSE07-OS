@@ -33,16 +33,18 @@ static void initHardware(void)  {
 
 /*==================[Definicion de tareas para el OS]==========================*/
 void tarea1(void)  {
-	int i;
-	while (1) {
+	volatile int i=8; volatile int h=9;
+	for(;;) {
 		i++;
+		h++;
 	}
 }
 
 void tarea2(void)  {
-	int j;
-	while (1) {
+	volatile int j=41; volatile int k=32;
+	for(;;) {
 		j++;
+		k++;
 	}
 }
 
@@ -56,7 +58,7 @@ int main(void)  {
 	MyOS_taskCreate(tarea1);
 	MyOS_taskCreate(tarea2);
 
-	while (1) {
+	for(;;) {
 		__WFI();
 	}
 }
