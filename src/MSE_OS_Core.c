@@ -9,24 +9,48 @@
  * 
  */
 #include "MSE_OS_Core.h"
-
+#include "board.h"
 
 /* ************************************************************************* */
 /*                                Private Data                               */
 /* ************************************************************************* */
-static TaskMemoryBlock_t __tasksStack[MAX_TASKS_N];
-static uint8_t __tasksStackCount = 0;
+static TaskMemoryBlock_t __tasksMemBlocks[MAX_TASKS_N];
+static uint8_t __tasksMemBlkCount = 0;
+static int8_t __currentTask = -1;
 
 
-uint32_t sp_tarea1; 
-uint32_t sp_tarea2;
+void MyOs_init(void) {
+	NVIC_SetPriority(PendSV_IRQn, (1 << __NVIC_PRIO_BITS)-1);
+}
 
 
-void MyOS_taskCreate(void *taskCode) {
-	TaskMemoryBlock_t* tmb = &__tasksStack[__tasksStackCount++];
+MyOs_TaskHandle_t MyOS_taskCreate(void *taskCode) {
+	if ((__tasksMemBlkCount + 1) > MAX_TASKS_N) {
+		return NULL;
+	}
+	TaskMemoryBlock_t* tmb = &__tasksMemBlocks[__tasksMemBlkCount++];
 	tmb->stack.xpsr = INIT_XPSR;
+	tmb->stack.lr_prev = EXEC_RETURN;
 	tmb->stack.pc = (uint32_t)taskCode;
 	tmb->stack_pointer = (uint32_t)&tmb->stack.r11;
-	sp_tarea1 = __tasksStack[0].stack_pointer;
-	sp_tarea2 = __tasksStack[1].stack_pointer;
+	return tmb;
+}
+
+
+uint32_t MyOs_getNextContext(uint32_t currentSp) {
+	if(__currentTask > -1) {
+		__tasksMemBlocks[__currentTask].stack_pointer = currentSp;
+	}
+	__currentTask = (++__currentTask) % __tasksMemBlkCount;
+	return __tasksMemBlocks[__currentTask].stack_pointer;
+}
+
+/**
+ * @brief ISR Handler. Enables PendSV Interruptions (lowest priority).
+ * 
+ */
+void SysTick_Handler(void) { // Overrides weak handler.
+	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
+	__ISB();
+	__DSB();
 }

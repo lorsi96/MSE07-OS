@@ -48,6 +48,14 @@ void tarea2(void)  {
 	}
 }
 
+void tarea3(void)  {
+	volatile int l=1; volatile int m=0;
+	for(;;) {
+		l++;
+		m++;
+	}
+}
+
 
 /*============================================================================*/
 
@@ -55,12 +63,12 @@ int main(void)  {
 
 	initHardware();
 
+	MyOs_init();
 	MyOS_taskCreate(tarea1);
 	MyOS_taskCreate(tarea2);
+	MyOS_taskCreate(tarea3);
 
-	for(;;) {
-		__WFI();
-	}
+	for(;;) {}
 }
 
 /** @} doxygen end group definition */

@@ -6,7 +6,7 @@
 #define STACK_SIZE                  64
 #define MAX_TASKS_N                 8
 #define STACK_FRAME_SIZE	        8
-#define FULL_REG_STACKING_SIZE      (STACK_FRAME_SIZE + 8)
+#define FULL_REG_STACKING_SIZE      (STACK_FRAME_SIZE + 8 + 1)
 #define INIT_XPSR 	                1 << 24				
 #define EXEC_RETURN	                0xFFFFFFF9
 
@@ -20,6 +20,7 @@ typedef struct {
     uint32_t r6;
     uint32_t r5;
     uint32_t r4;
+    uint32_t lr_prev;
     uint32_t r0;
     uint32_t r1;
     uint32_t r2;
@@ -35,7 +36,12 @@ typedef struct {
 	uint32_t stack_pointer;
 } TaskMemoryBlock_t;
 
-void MyOS_taskCreate(void *taskCode);
+
+typedef TaskMemoryBlock_t* MyOs_TaskHandle_t;
+
+void MyOs_init();
+
+MyOs_TaskHandle_t MyOS_taskCreate(void *taskCode);
 
 
 #endif /* ISO_I_2020_MSE_OS_INC_MSE_OS_CORE_H_ */
