@@ -4,7 +4,7 @@
 
 #include "board.h"
 #include "sapi.h"
-#include "MSE_OS_Core.h"
+#include "MyOs_Core.h"
 
 
 /*==================[macros and definitions]=================================*/
@@ -63,10 +63,10 @@ int main(void)  {
 
 	initHardware();
 
-	MyOs_init();
-	MyOS_taskCreate(tarea1);
-	MyOS_taskCreate(tarea2);
-	MyOS_taskCreate(tarea3);
+	MyOs_initialize();
+	MyOS_taskCreate(tarea1, /*handle=*/NULL);
+	MyOS_taskCreate(tarea2, /*handle=*/NULL);
+	MyOS_taskCreate(tarea3, /*handle=*/NULL);
 
 	for(;;) {}
 }
