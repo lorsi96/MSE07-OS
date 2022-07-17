@@ -25,6 +25,14 @@ static MyOs_t* __MyOs_getInstance() {
     return &instance;
 }
 
+static void __MyOs_scheduler() {
+	MyOs_t* self = __MyOs_getInstance();
+	if(self->state == MY_OS_GENERAL_STATE_RESET) {
+		self->currentTaskId = 0;
+	} else {
+		self->nextTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
+	}
+}
 /* ************************************************************************* */
 /*                                ISR Handlers                               */
 /* ************************************************************************* */
@@ -33,6 +41,7 @@ static MyOs_t* __MyOs_getInstance() {
  * 
  */
 void SysTick_Handler(void) { // Overrides weak handler.
+	__MyOs_scheduler();
 	SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
 	__ISB();
 	__DSB();
@@ -66,11 +75,14 @@ MyOs_Error_t MyOS_taskCreate(const void *taskCode, MyOs_TaskHandle_t* handle) {
 
 uint32_t MyOs_getNextContext(uint32_t currentSp) {
 	MyOs_t* self = __MyOs_getInstance();
-	if(self->currentTaskId > -1) {
+	if(self->state == MY_OS_GENERAL_STATE_RESET) {
+		self->state = MY_OS_GENERAL_STATE_RUN;
+		self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_RUNNING;
+	} else {
 		self->tasks[self->currentTaskId].stack_pointer = currentSp;
+		self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_READY;
+		self->currentTaskId = self->nextTaskId;
+		self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_RUNNING;
 	}
-	self->currentTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
 	return self->tasks[self->currentTaskId].stack_pointer;
 }
-
-
