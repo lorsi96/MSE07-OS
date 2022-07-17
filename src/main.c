@@ -1,74 +1,55 @@
-/*==================[inclusions]=============================================*/
-
+/* ************************************************************************* */
+/*                                 Inclusions                                */
+/* ************************************************************************* */
 #include "main.h"
 
+#include "MyOs_Core.h"
 #include "board.h"
 #include "sapi.h"
-#include "MyOs_Core.h"
 
+/* ************************************************************************* */
+/*                           Macros and Definitions                          */
+/* ************************************************************************* */
+#define MY_OS_MILLIS 1000
 
-/*==================[macros and definitions]=================================*/
+/* ************************************************************************* */
+/*                       Private Functions Definitions                       */
+/* ************************************************************************* */
 
-#define MILISEC		1000
-
-/*==================[Global data declaration]==============================*/
-
-/*==================[internal functions declaration]=========================*/
-
-/*==================[internal data definition]===============================*/
-
-/*==================[external data definition]===============================*/
-
-/*==================[internal functions definition]==========================*/
-
-/** @brief hardware initialization function
- *	@return none
+/**
+ * @brief hardware initialization function
  */
-static void initHardware(void)  {
-	Board_Init();
-	SystemCoreClockUpdate();
-	SysTick_Config(SystemCoreClock / MILISEC);		//systick 1ms
+static void initHardware(void) {
+  Board_Init();
+  SystemCoreClockUpdate();
+  SysTick_Config(SystemCoreClock / MY_OS_MILLIS);
 }
 
-
-/*==================[Definicion de tareas para el OS]==========================*/
-void tarea1(void)  {
-	volatile int i=8; volatile int h=9;
-	for(;;) {
-		i++;
-		h++;
-	}
+/* ************************************************************************* */
+/*                             Tasks Definitions                             */
+/* ************************************************************************* */
+void sillyCountTask(void* _countStep) {
+  uint32_t countStep = (uint32_t)_countStep;
+  volatile int i = 0;
+  volatile int h = 0;  // volatile to avoid comp. optimization.
+  for (;;) {
+    i += countStep;
+    h += countStep;
+  }
 }
-
-void tarea2(void)  {
-	volatile int j=41; volatile int k=32;
-	for(;;) {
-		j++;
-		k++;
-	}
-}
-
-void tarea3(void)  {
-	volatile int l=1; volatile int m=0;
-	for(;;) {
-		l++;
-		m++;
-	}
-}
-
 
 /*============================================================================*/
 
-int main(void)  {
+int main(void) {
+  initHardware();
 
-	initHardware();
+  MyOs_initialize();
+  MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)3, /*handle=*/NULL);
+  MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)4, /*handle=*/NULL);
+  MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)2, /*handle=*/NULL);
 
-	MyOs_initialize();
-	MyOS_taskCreate(tarea1, /*handle=*/NULL);
-	MyOS_taskCreate(tarea2, /*handle=*/NULL);
-	MyOS_taskCreate(tarea3, /*handle=*/NULL);
-
-	for(;;) {}
+  for (;;) {
+  }
 }
 
 /** @} doxygen end group definition */
