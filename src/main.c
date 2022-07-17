@@ -20,38 +20,36 @@
  * @brief hardware initialization function
  */
 static void initHardware(void) {
-  Board_Init();
-  SystemCoreClockUpdate();
-  SysTick_Config(SystemCoreClock / MY_OS_MILLIS);
+    Board_Init();
+    SystemCoreClockUpdate();
+    SysTick_Config(SystemCoreClock / MY_OS_MILLIS);
 }
 
 /* ************************************************************************* */
 /*                             Tasks Definitions                             */
 /* ************************************************************************* */
 void sillyCountTask(void* _countStep) {
-  uint32_t countStep = (uint32_t)_countStep;
-  volatile int i = 0;
-  volatile int h = 0;  // volatile to avoid comp. optimization.
-  for (;;) {
-    i += countStep;
-    h += countStep;
-  }
+    uint32_t countStep = (uint32_t)_countStep;
+    volatile int i = 0;
+    volatile int h = 0;  // volatile to avoid comp. optimization.
+    for (;;) {
+        i += countStep;
+        h += countStep;
+    }
 }
 
-/*============================================================================*/
+/* ************************************************************************* */
+/*                              Main Definition                              */
+/* ************************************************************************* */
 
 int main(void) {
-  initHardware();
+    initHardware();
 
-  MyOs_initialize();
-  MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)3, /*handle=*/NULL);
-  MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)4, /*handle=*/NULL);
-  MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)2, /*handle=*/NULL);
+    MyOs_initialize();
+    MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)3, /*handle=*/NULL);
+    MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)4, /*handle=*/NULL);
+    MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)2, /*handle=*/NULL);
 
-  for (;;) {
-  }
+    for (;;) {
+    }
 }
-
-/** @} doxygen end group definition */
-
-/*==================[end of file]============================================*/

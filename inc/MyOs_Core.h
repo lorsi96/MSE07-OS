@@ -1,3 +1,16 @@
+/**
+ * @file MyOs_Core.h
+ * @author Lucas Orsi (lorsi@itba.edu.ar)
+ * @brief
+ * @version 0.1
+ * @date 2022-07-16
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
+/* ************************************************************************* */
+/*                                 Inclusions                                */
+/* ************************************************************************* */
 #ifndef __MY_OS_CORE__
 #define __MY_OS_CORE__
 
