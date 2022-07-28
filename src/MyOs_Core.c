@@ -9,6 +9,7 @@
  *
  */
 #include "MyOs_Core.h"
+#include "MyOs_Hooks.h"
 
 #include "board.h"
 
@@ -32,6 +33,12 @@ static void __MyOs_scheduler() {
         self->nextTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
     }
 }
+
+static inline void __MyOs_raiseError(void* caller, MyOs_Error_t err) {
+    MyOs_t* self = __MyOs_getInstance();
+    self->error = err;
+    MyOs_errorHook(caller, err);
+}
 /* ************************************************************************* */
 /*                                ISR Handlers                               */
 /* ************************************************************************* */
@@ -41,6 +48,8 @@ static void __MyOs_scheduler() {
  */
 void SysTick_Handler(void) {  // Overrides weak handler.
     __MyOs_scheduler();
+    MyOs_tickHook();
+
     SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
     __ISB();
     __DSB();
@@ -54,11 +63,11 @@ void MyOs_initialize(void) {
     NVIC_SetPriority(PendSV_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
 }
 
-MyOs_Error_t MyOS_taskCreate(const void* taskCode, void* parameters,
+void MyOS_taskCreate(const void* taskCode, void* parameters,
                              MyOs_TaskHandle_t* handle) {
     MyOs_t* self = __MyOs_getInstance();
     if ((self->numberOfTasks + 1) > MAX_TASKS_N) {
-        return MY_OS_ERROR_OUT_OF_MEMORY;
+        __MyOs_raiseError(MyOS_taskCreate, MY_OS_ERROR_OUT_OF_MEMORY);
     }
     MyOs_TCB_t* tmb = &self->tasks[self->numberOfTasks++];
     tmb->stack.xpsr = INIT_XPSR;
@@ -69,7 +78,6 @@ MyOs_Error_t MyOS_taskCreate(const void* taskCode, void* parameters,
     if (handle != NULL) {
         *handle = tmb;
     }
-    return MY_OS_ERROR_NONE;
 }
 
 uint32_t __MyOs_getNextContext(uint32_t currentSp) {
