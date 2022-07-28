@@ -2,16 +2,22 @@
 #include "MyOs_Hooks.h"
 
 
-void __weak MyOs_returnHook() {
+__weak void MyOs_returnHook() {
     for(;;);
 }
 
-void __weak MyOs_tickHook() {
+__weak void MyOs_tickHook() {
     __asm volatile("nop");
 }
 
-void __weak MyOs_errorHook(void* caller, MyOs_Error_t err) {
+__weak void MyOs_errorHook(void* caller, MyOs_Error_t err) {
     (void)caller;
     (void)err;
     for(;;);
+}
+
+__weak void MyOs_idleTask() {
+    for(;;) {
+        __asm("wfi");
+    }
 }

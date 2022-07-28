@@ -15,6 +15,7 @@
 /*                                  Includes                                 */
 /* ************************************************************************* */
 #include <stdint.h>
+#include <stdbool.h>
 
 /* ************************************************************************* */
 /*                           Preprocessor Constants                          */
@@ -55,6 +56,16 @@ typedef struct {
 } MyOs_TaskStackLayout_t;
 
 /**
+ * @brief Task states.
+ *
+ */
+typedef enum {
+    MY_OS_TASK_STATE_READY = 0,
+    MY_OS_TASK_STATE_RUNNING = 1,
+    MY_OS_TASK_STATE_BLOCKED = 2,
+} MyOs_TaskState_t;
+
+/**
  * @brief Task Control Block structure.
  *
  */
@@ -62,18 +73,9 @@ typedef struct {
     MyOs_TaskStackLayout_t stack;
     uint32_t stack_pointer;
     uint8_t id;
-    uint8_t state;
+    MyOs_TaskState_t state;
     uint8_t priority;
 } MyOs_TCB_t;
-
-/**
- * @brief Task states.
- *
- */
-typedef enum {
-    MY_OS_TASK_STATE_READY = 0,
-    MY_OS_TASK_STATE_RUNNING = 1,
-} MyOs_TaskState_t;
 
 /**
  * @brief OS engine general state.
@@ -91,6 +93,9 @@ typedef enum {
 typedef enum {
     MY_OS_ERROR_NONE = 0,
     MY_OS_ERROR_OUT_OF_MEMORY = 1,
+    MY_OS_ERROR_INVALID_TASK_STATE = 2,
+    MY_OS_ERROR_NO_TASKS = 3,
+    MY_OS_ERROR_TASK_ID_BLOCKED = 4,
 } MyOs_Error_t;
 
 /**
@@ -104,6 +109,7 @@ typedef struct {
     int8_t nextTaskId;              //!< Id of task to be run afterwards.
     MyOs_Error_t error;             //!< Cached error. See #MyOs_Error_t.
     MyOs_GeneralState_t state;
+    bool contextSwitchRequested;
 } MyOs_t;
 
 /**

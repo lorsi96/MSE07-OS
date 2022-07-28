@@ -4,6 +4,7 @@
 #include "main.h"
 
 #include "MyOs_Core.h"
+#include "MyOs_TestTasks.h"
 #include "board.h"
 #include "sapi.h"
 
@@ -35,6 +36,17 @@ void sillyCountTask(void* _countStep) {
     for (;;) {
         i += countStep;
         h += countStep;
+        MyOs_blockTask(NULL);
+    }
+}
+
+void sillyFPUCountTask(void* _countStep) {
+    float countStep = ((uint32_t)_countStep) / 10.;
+    volatile float i = 0.0;
+    volatile float h = 0.0;  // volatile to avoid comp. optimization.
+    for (;;) {
+        i += countStep;
+        h += countStep;
     }
 }
 
@@ -47,8 +59,9 @@ int main(void) {
 
     MyOs_initialize();
     MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)3, /*handle=*/NULL);
-    MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)4, /*handle=*/NULL);
-    MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)2, /*handle=*/NULL);
+    //MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)4, /*handle=*/NULL);
+    //MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)2, /*handle=*/NULL);
+    MyOS_taskCreate(sillyFPUCountTask, /*parameters=*/(void*)1, /*handle=*/NULL);
 
     for (;;) {
     }

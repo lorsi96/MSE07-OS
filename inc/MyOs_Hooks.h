@@ -26,5 +26,11 @@ void MyOs_tickHook();
  */
 void MyOs_errorHook(void* caller, MyOs_Error_t err);
 
+/**
+ * @brief Idle task. Called only when no other task is available.
+ * 
+ */
+void MyOs_idleTask();
+
 #endif // __MY_OS_HOOKS__
 

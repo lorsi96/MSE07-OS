@@ -37,6 +37,17 @@ void MyOs_initialize();
  * @param[out] handle used to pass out the created task's handle.
  */
 void MyOS_taskCreate(const void* taskCode, void* parameters,
-                             MyOs_TaskHandle_t* handle);
+                             MyOs_TaskHandle_t* taskHandle);
+
+
+/**
+ * @brief used to request a context switch to another task if possible.
+ * 
+ */
+void MyOs_taskYield();
+
+void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
+
+void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle);
 
 #endif  // __MY_OS_CORE__

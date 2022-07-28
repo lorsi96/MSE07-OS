@@ -12,6 +12,7 @@
 #include "MyOs_Hooks.h"
 
 #include "board.h"
+#define IDLE_TASK_ID  MAX_TASKS_N
 
 /* ************************************************************************* */
 /*                             Private Functions                             */
@@ -25,19 +26,46 @@ static MyOs_t* __MyOs_getInstance() {
     return &instance;
 }
 
-static void __MyOs_scheduler() {
-    MyOs_t* self = __MyOs_getInstance();
-    if (self->state == MY_OS_GENERAL_STATE_RESET) {
-        self->currentTaskId = 0;
-    } else {
-        self->nextTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
-    }
-}
-
 static inline void __MyOs_raiseError(void* caller, MyOs_Error_t err) {
     MyOs_t* self = __MyOs_getInstance();
     self->error = err;
     MyOs_errorHook(caller, err);
+}
+
+
+static void __MyOs_scheduler() {
+    MyOs_t* self = __MyOs_getInstance();
+    
+    if (self->state == MY_OS_GENERAL_STATE_RESET) {
+        if(self->numberOfTasks == 0) {
+            MyOs_errorHook(__MyOs_scheduler, MY_OS_ERROR_NO_TASKS);
+        }
+        self->currentTaskId = 0;
+        self->contextSwitchRequested = true;
+        return;
+    }
+
+    volatile uint8_t firstTargetTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
+    volatile uint8_t candidateTaskId = firstTargetTaskId;
+    self->contextSwitchRequested = false;
+    do {
+        switch (self->tasks[candidateTaskId].state) {
+        case MY_OS_TASK_STATE_READY:
+            self->nextTaskId = candidateTaskId;
+            self->contextSwitchRequested = true;
+            return; // Next task found.
+        case MY_OS_TASK_STATE_BLOCKED: 
+        case MY_OS_TASK_STATE_RUNNING: 
+            break;
+        default:
+            __MyOs_raiseError(__MyOs_scheduler, MY_OS_ERROR_INVALID_TASK_STATE);
+        }
+        candidateTaskId = (candidateTaskId + 1) % self->numberOfTasks;
+    } while(candidateTaskId != firstTargetTaskId);
+    
+    // No task is ready, run Idle task.
+    self->nextTaskId = IDLE_TASK_ID;
+    self->contextSwitchRequested = true;
 }
 
 static inline void __MyOs_requestPendSv() {
@@ -58,9 +86,26 @@ static inline void __MyOs_configurePendSv() {
  *
  */
 void SysTick_Handler(void) {  // Overrides weak handler.
+    MyOs_t* self = __MyOs_getInstance();
+    
     __MyOs_scheduler();
     MyOs_tickHook();
-    __MyOs_requestPendSv();
+    if(self->contextSwitchRequested) {
+        __MyOs_requestPendSv();
+    }
+}
+
+static void __MyOs_initTaskStack(MyOs_TCB_t* tcb, const void* taskCode, const void* taskParams) {
+    tcb->stack.xpsr = INIT_XPSR;
+    tcb->stack.lrPrev = EXEC_RETURN;
+    tcb->stack.pc = (uint32_t)taskCode;
+    tcb->stack.r0 = (uint32_t)taskParams;
+    tcb->stack_pointer = (uint32_t)&tcb->stack.r11;
+}
+
+static void __MyOs_initIdleTask() {
+    MyOs_t* self = __MyOs_getInstance();
+    __MyOs_initTaskStack(&self->tasks[IDLE_TASK_ID], MyOs_idleTask, NULL);
 }
 
 /* ************************************************************************* */
@@ -68,26 +113,64 @@ void SysTick_Handler(void) {  // Overrides weak handler.
 /* ************************************************************************* */
 
 void MyOs_initialize(void) {
+    __MyOs_initIdleTask();
     __MyOs_configurePendSv();    
 }
 
 void MyOS_taskCreate(const void* taskCode, void* parameters,
                              MyOs_TaskHandle_t* handle) {
     MyOs_t* self = __MyOs_getInstance();
-    if ((self->numberOfTasks + 1) > MAX_TASKS_N) {
+
+    if ((self->numberOfTasks + 1) >= MAX_TASKS_N) {
         __MyOs_raiseError(MyOS_taskCreate, MY_OS_ERROR_OUT_OF_MEMORY);
     }
-    MyOs_TCB_t* tmb = &self->tasks[self->numberOfTasks++];
-    tmb->stack.xpsr = INIT_XPSR;
-    tmb->stack.lrPrev = EXEC_RETURN;
-    tmb->stack.pc = (uint32_t)taskCode;
-    tmb->stack.r0 = (uint32_t)parameters;
-    tmb->stack_pointer = (uint32_t)&tmb->stack.r11;
+
+    MyOs_TCB_t* tcb = &self->tasks[self->numberOfTasks++];
+    __MyOs_initTaskStack(tcb, taskCode, parameters);
+    
     if (handle != NULL) {
-        *handle = tmb;
+        *handle = tcb;
     }
 }
 
+
+void MyOs_blockTask(MyOs_TaskHandle_t taskHandle) {
+    MyOs_t* self = __MyOs_getInstance();
+    uint8_t taskId;
+
+    if(taskHandle == NULL) {
+        taskId = self->currentTaskId;
+    } else {
+        taskId = taskHandle->id;
+        if(taskId == IDLE_TASK_ID) {
+            __MyOs_raiseError(MyOs_blockTask, MY_OS_ERROR_TASK_ID_BLOCKED);
+        }
+    }
+    
+    if(taskId < self->numberOfTasks) {
+        self->tasks[taskId].state = MY_OS_TASK_STATE_BLOCKED;
+        if(taskId == self->currentTaskId) {
+            MyOs_taskYield();
+        }
+    }
+    
+}
+
+void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle) {
+    MyOs_t* self = __MyOs_getInstance();
+    if(taskHandle->id < self->numberOfTasks) {
+        if(taskHandle->id != self->currentTaskId) {
+            self->tasks[taskHandle->id].state = MY_OS_TASK_STATE_READY;
+        }
+    }
+}
+
+void MyOs_taskYield() {
+    __MyOs_scheduler();
+}
+
+
+/* ****************** Pend SV Interrupt: Context Switcher ****************** */
 uint32_t __MyOs_getNextContext(uint32_t currentSp) {
     MyOs_t* self = __MyOs_getInstance();
     if (self->state == MY_OS_GENERAL_STATE_RESET) {
@@ -95,9 +178,13 @@ uint32_t __MyOs_getNextContext(uint32_t currentSp) {
         self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_RUNNING;
     } else {
         self->tasks[self->currentTaskId].stack_pointer = currentSp;
-        self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_READY;
+        if(self->tasks[self->currentTaskId].state == MY_OS_TASK_STATE_RUNNING) {
+            self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_READY;
+        }
         self->currentTaskId = self->nextTaskId;
         self->tasks[self->currentTaskId].state = MY_OS_TASK_STATE_RUNNING;
     }
     return self->tasks[self->currentTaskId].stack_pointer;
 }
+
+
