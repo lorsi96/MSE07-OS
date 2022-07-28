@@ -39,6 +39,17 @@ static inline void __MyOs_raiseError(void* caller, MyOs_Error_t err) {
     self->error = err;
     MyOs_errorHook(caller, err);
 }
+
+static inline void __MyOs_requestPendSv() {
+    SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
+    __ISB();
+    __DSB();
+}
+
+static inline void __MyOs_configurePendSv() {
+    NVIC_SetPriority(PendSV_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
+}
+
 /* ************************************************************************* */
 /*                                ISR Handlers                               */
 /* ************************************************************************* */
@@ -49,10 +60,7 @@ static inline void __MyOs_raiseError(void* caller, MyOs_Error_t err) {
 void SysTick_Handler(void) {  // Overrides weak handler.
     __MyOs_scheduler();
     MyOs_tickHook();
-
-    SCB->ICSR = SCB_ICSR_PENDSVSET_Msk;
-    __ISB();
-    __DSB();
+    __MyOs_requestPendSv();
 }
 
 /* ************************************************************************* */
@@ -60,7 +68,7 @@ void SysTick_Handler(void) {  // Overrides weak handler.
 /* ************************************************************************* */
 
 void MyOs_initialize(void) {
-    NVIC_SetPriority(PendSV_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
+    __MyOs_configurePendSv();    
 }
 
 void MyOS_taskCreate(const void* taskCode, void* parameters,
