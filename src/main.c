@@ -4,6 +4,7 @@
 #include "main.h"
 
 #include "MyOs_Core.h"
+#include "MyOs_Event.h"
 #include "MyOs_TestTasks.h"
 #include "board.h"
 #include "sapi.h"
@@ -26,29 +27,24 @@ static void initHardware(void) {
     SysTick_Config(SystemCoreClock / MY_OS_MILLIS);
 }
 
+
+MyOs_Event_t myEvent;
+
 /* ************************************************************************* */
 /*                             Tasks Definitions                             */
 /* ************************************************************************* */
-void sillyCountTask(void* _countStep) {
-    uint32_t countStep = (uint32_t)_countStep;
-    volatile int i = 0;
-    volatile int h = 0;  // volatile to avoid comp. optimization.
-    for (;;) {
-        i += countStep;
-        h += countStep;
-        MyOs_blockTask(NULL);
-    }
+void waitingTask(void* _) {
+    MyOs_eventWait(&myEvent, 0x01);
+    gpioWrite(LEDG, true);
+    for(;;);
 }
 
-void sillyFPUCountTask(void* _countStep) {
-    float countStep = ((uint32_t)_countStep) / 10.;
-    volatile float i = 0.0;
-    volatile float h = 0.0;  // volatile to avoid comp. optimization.
-    for (;;) {
-        i += countStep;
-        h += countStep;
-    }
+void buttonTask(void* _) {
+    while(gpioRead(TEC1));
+    MyOs_eventPost(&myEvent, 0x01);
+    for(;;);
 }
+
 
 /* ************************************************************************* */
 /*                              Main Definition                              */
@@ -57,12 +53,11 @@ void sillyFPUCountTask(void* _countStep) {
 int main(void) {
     initHardware();
 
+    MyOs_createEvent(&myEvent);
+    
     MyOs_initialize();
-    MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)3, /*handle=*/NULL);
-    //MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)4, /*handle=*/NULL);
-    //MyOS_taskCreate(sillyCountTask, /*parameters=*/(void*)2, /*handle=*/NULL);
-    MyOS_taskCreate(sillyFPUCountTask, /*parameters=*/(void*)1, /*handle=*/NULL);
+    MyOS_taskCreate(waitingTask, /*parameters=*/NULL, /*handle=*/NULL);
+    MyOS_taskCreate(buttonTask, /*parameters=*/NULL, /*handle=*/NULL);
 
-    for (;;) {
-    }
+    for (;;);
 }

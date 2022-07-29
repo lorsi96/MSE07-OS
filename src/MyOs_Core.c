@@ -10,6 +10,7 @@
  */
 #include "MyOs_Core.h"
 #include "MyOs_Hooks.h"
+#include "MyOs_Event.h"
 
 #include "board.h"
 #define IDLE_TASK_ID  MAX_TASKS_N
@@ -108,6 +109,11 @@ static void __MyOs_initIdleTask() {
     __MyOs_initTaskStack(&self->tasks[IDLE_TASK_ID], MyOs_idleTask, NULL);
 }
 
+static MyOs_TaskHandle_t __MyOs_getCurrentTask() {
+    MyOs_t* self = __MyOs_getInstance();
+    return &self->tasks[self->currentTaskId];
+}
+
 /* ************************************************************************* */
 /*                              Public Functions                             */
 /* ************************************************************************* */
@@ -188,3 +194,48 @@ uint32_t __MyOs_getNextContext(uint32_t currentSp) {
 }
 
 
+
+/* ************************************************************************* */
+/*                                 Event API                                 */
+/* ************************************************************************* */
+
+void MyOs_createEvent(MyOs_Event_t* ev) {
+    ev->flags = 0x00;
+    ev->waitingTask = NULL;
+}
+
+void MyOs_eventSet(MyOs_Event_t* ev, uint8_t flags) {
+    ev->flags = flags;
+    if(ev->waitingTask) {
+        MyOs_unblockTask(ev->waitingTask);
+    }
+}
+
+void MyOs_eventPost(MyOs_Event_t* ev, uint8_t flags) {
+    ev->flags |= flags;
+    if(ev->waitingTask) {
+        MyOs_unblockTask(ev->waitingTask);
+    }
+}
+
+void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags) {
+    if(!ev->waitingTask) {
+        ev->waitingTask = __MyOs_getCurrentTask();
+    } else {
+        __MyOs_raiseError(MyOs_eventWait, MY_OS_ERROR_EVENT_ALREADY_AWAITED);
+    }
+    while(!(ev->flags & flags)) {
+        MyOs_blockTask(NULL);
+    }
+}
+
+void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags) {
+    if(!ev->waitingTask) {
+        ev->waitingTask = __MyOs_getCurrentTask();
+    } else {
+        __MyOs_raiseError(MyOs_eventWait, MY_OS_ERROR_EVENT_ALREADY_AWAITED);
+    }
+    while(!(ev->flags ^ flags)) {
+        MyOs_blockTask(NULL);
+    }
+}

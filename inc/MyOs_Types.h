@@ -96,6 +96,7 @@ typedef enum {
     MY_OS_ERROR_INVALID_TASK_STATE = 2,
     MY_OS_ERROR_NO_TASKS = 3,
     MY_OS_ERROR_TASK_ID_BLOCKED = 4,
+    MY_OS_ERROR_EVENT_ALREADY_AWAITED = 5
 } MyOs_Error_t;
 
 /**
@@ -112,11 +113,20 @@ typedef struct {
     bool contextSwitchRequested;
 } MyOs_t;
 
+
 /**
  * @brief Opaque pointer to task control block.
  *
  */
 typedef MyOs_TCB_t* MyOs_TaskHandle_t;
+
+
+typedef struct {
+    uint8_t flags;
+    MyOs_TaskHandle_t waitingTask;
+} MyOs_Event_t;
+
+
 
 /* ****************************** End Of File ****************************** */
 #endif  // __MY_OS_TYPES__
