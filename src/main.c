@@ -5,7 +5,7 @@
 
 #include "MyOs_Core.h"
 #include "MyOs_Event.h"
-#include "MyOs_TestTasks.h"
+// #include "MyOs_TestTasks.h"
 #include "board.h"
 #include "sapi.h"
 
@@ -34,17 +34,31 @@ MyOs_Event_t myEvent;
 /*                             Tasks Definitions                             */
 /* ************************************************************************* */
 void waitingTask(void* _) {
-    MyOs_eventWait(&myEvent, 0x01);
-    gpioWrite(LEDG, true);
-    for(;;);
+    for(;;) {
+        MyOs_eventWait(&myEvent, 0b11);
+        if(myEvent.flags & 0b01) {
+            gpioToggle(LEDG); 
+        }
+        if(myEvent.flags & 0b10) {
+            gpioToggle(LEDR); 
+        }
+        MyOs_eventSet(&myEvent, 0x00);
+    }
 }
 
-void buttonTask(void* _) {
-    while(gpioRead(TEC1));
-    MyOs_eventPost(&myEvent, 0x01);
-    for(;;);
+void buttonTaskA(void* flag) {
+    for(;;) {
+        while(gpioRead(TEC1)); // No debounce... but serves its purpose as is.
+        MyOs_eventPost(&myEvent, 0b01);
+    }
 }
 
+void buttonTaskB(void* flag) {
+    for(;;) {
+        while(gpioRead(TEC2)); // No debounce... but serves its purpose as is.
+        MyOs_eventPost(&myEvent, 0b10);
+    }
+}
 
 /* ************************************************************************* */
 /*                              Main Definition                              */
@@ -57,7 +71,8 @@ int main(void) {
     
     MyOs_initialize();
     MyOS_taskCreate(waitingTask, /*parameters=*/NULL, /*handle=*/NULL);
-    MyOS_taskCreate(buttonTask, /*parameters=*/NULL, /*handle=*/NULL);
+    MyOS_taskCreate(buttonTaskA, /*parameters=*/NULL, /*handle=*/NULL);
+    MyOS_taskCreate(buttonTaskB, /*parameters=*/NULL, /*handle=*/NULL);
 
     for (;;);
 }

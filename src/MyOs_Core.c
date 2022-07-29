@@ -227,6 +227,7 @@ void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags) {
     while(!(ev->flags & flags)) {
         MyOs_blockTask(NULL);
     }
+    ev->waitingTask = NULL;
 }
 
 void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags) {
