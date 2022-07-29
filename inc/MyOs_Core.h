@@ -36,7 +36,7 @@ void MyOs_initialize();
  * @param[in] parameters parameters passed into the task.
  * @param[out] handle used to pass out the created task's handle.
  */
-void MyOS_taskCreate(const void* taskCode, void* parameters,
+void MyOS_taskCreate(const void* taskCode, void* parameters, uint8_t priority,
                              MyOs_TaskHandle_t* taskHandle);
 
 

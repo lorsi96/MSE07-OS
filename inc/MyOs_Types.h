@@ -100,6 +100,12 @@ typedef enum {
 } MyOs_Error_t;
 
 /**
+ * @brief Opaque pointer to task control block.
+ *
+ */
+typedef MyOs_TCB_t* MyOs_TaskHandle_t;
+
+/**
  * @brief Operating system general control structure.
  *
  */
@@ -111,14 +117,9 @@ typedef struct {
     MyOs_Error_t error;             //!< Cached error. See #MyOs_Error_t.
     MyOs_GeneralState_t state;
     bool contextSwitchRequested;
+    uint8_t mxPrio;
 } MyOs_t;
 
-
-/**
- * @brief Opaque pointer to task control block.
- *
- */
-typedef MyOs_TCB_t* MyOs_TaskHandle_t;
 
 
 typedef struct {

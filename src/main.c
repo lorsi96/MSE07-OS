@@ -70,9 +70,9 @@ int main(void) {
     MyOs_createEvent(&myEvent);
     
     MyOs_initialize();
-    MyOS_taskCreate(waitingTask, /*parameters=*/NULL, /*handle=*/NULL);
-    MyOS_taskCreate(buttonTaskA, /*parameters=*/NULL, /*handle=*/NULL);
-    MyOS_taskCreate(buttonTaskB, /*parameters=*/NULL, /*handle=*/NULL);
+    MyOS_taskCreate(waitingTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
+    MyOS_taskCreate(buttonTaskA, /*parameters=*/NULL, 1,/*handle=*/NULL);
+    MyOS_taskCreate(buttonTaskB, /*parameters=*/NULL, 2,/*handle=*/NULL);
 
     for (;;);
 }

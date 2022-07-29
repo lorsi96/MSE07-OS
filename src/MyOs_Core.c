@@ -15,6 +15,7 @@
 #include "board.h"
 #define IDLE_TASK_ID  MAX_TASKS_N
 
+
 /* ************************************************************************* */
 /*                             Private Functions                             */
 /* ************************************************************************* */
@@ -46,24 +47,30 @@ static void __MyOs_scheduler() {
         return;
     }
 
-    volatile uint8_t firstTargetTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
-    volatile uint8_t candidateTaskId = firstTargetTaskId;
+    uint8_t candidateTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
     self->contextSwitchRequested = false;
-    do {
-        switch (self->tasks[candidateTaskId].state) {
-        case MY_OS_TASK_STATE_READY:
-            self->nextTaskId = candidateTaskId;
-            self->contextSwitchRequested = true;
-            return; // Next task found.
-        case MY_OS_TASK_STATE_BLOCKED: 
-        case MY_OS_TASK_STATE_RUNNING: 
-            break;
-        default:
-            __MyOs_raiseError(__MyOs_scheduler, MY_OS_ERROR_INVALID_TASK_STATE);
-        }
-        candidateTaskId = (candidateTaskId + 1) % self->numberOfTasks;
-    } while(candidateTaskId != firstTargetTaskId);
-    
+    for(uint8_t p=self->mxPrio; p > 0; p--) {
+        uint8_t firstPTaskId = 0xFF;
+        do {
+            if(self->tasks[candidateTaskId].priority == p) {
+                if (firstPTaskId == 0xFF) firstPTaskId = candidateTaskId; 
+                switch (self->tasks[candidateTaskId].state) {
+                case MY_OS_TASK_STATE_READY:
+                    self->nextTaskId = candidateTaskId;
+                    self->contextSwitchRequested = true;
+                    return; // Next task found.
+                case MY_OS_TASK_STATE_BLOCKED: 
+                case MY_OS_TASK_STATE_RUNNING: 
+                    self->nextTaskId = candidateTaskId;
+                    self->contextSwitchRequested = true;
+                    return;
+                default:
+                    __MyOs_raiseError(__MyOs_scheduler, MY_OS_ERROR_INVALID_TASK_STATE);
+                }
+            }
+            candidateTaskId = (candidateTaskId + 1) % self->numberOfTasks;
+        } while(candidateTaskId != firstPTaskId);
+    }
     // No task is ready, run Idle task.
     self->nextTaskId = IDLE_TASK_ID;
     self->contextSwitchRequested = true;
@@ -123,7 +130,7 @@ void MyOs_initialize(void) {
     __MyOs_configurePendSv();    
 }
 
-void MyOS_taskCreate(const void* taskCode, void* parameters,
+void MyOS_taskCreate(const void* taskCode, void* parameters, uint8_t priority,
                              MyOs_TaskHandle_t* handle) {
     MyOs_t* self = __MyOs_getInstance();
 
@@ -131,9 +138,14 @@ void MyOS_taskCreate(const void* taskCode, void* parameters,
         __MyOs_raiseError(MyOS_taskCreate, MY_OS_ERROR_OUT_OF_MEMORY);
     }
 
-    MyOs_TCB_t* tcb = &self->tasks[self->numberOfTasks++];
+    MyOs_TCB_t* tcb = &self->tasks[self->numberOfTasks];
+    tcb->id = self->numberOfTasks++;
+    tcb->priority = priority;
+    if(priority > self->mxPrio) {
+        self->mxPrio = priority;
+    }
+
     __MyOs_initTaskStack(tcb, taskCode, parameters);
-    
     if (handle != NULL) {
         *handle = tcb;
     }
