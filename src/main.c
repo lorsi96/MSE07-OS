@@ -42,21 +42,29 @@ void waitingTask(void* _) {
         if(myEvent.flags & 0b10) {
             gpioToggle(LEDR); 
         }
+        if(myEvent.flags & 0b100) {
+            gpioToggle(LEDB); 
+        }
         MyOs_eventSet(&myEvent, 0x00);
     }
 }
 
-void buttonTaskA(void* flag) {
-    for(;;) {
-        while(gpioRead(TEC1)); // No debounce... but serves its purpose as is.
-        MyOs_eventPost(&myEvent, 0b01);
-    }
+uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) {
+    return (tec << 8) | evt;
 }
 
-void buttonTaskB(void* flag) {
+void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
+    *tec = (uint16_t)packed >> 8;
+    *evt = (uint16_t)packed & 0xFF;
+}
+
+
+void buttonTask(void* buttonEvt) {
+    uint8_t tec, evt;
+    __unpack_tec_ev(buttonEvt, &tec, &evt);
     for(;;) {
-        while(gpioRead(TEC2)); // No debounce... but serves its purpose as is.
-        MyOs_eventPost(&myEvent, 0b10);
+        while(gpioRead(tec)); // No debounce... but serves its purpose as is.
+        MyOs_eventPost(&myEvent, evt);
     }
 }
 
@@ -71,8 +79,23 @@ int main(void) {
     
     MyOs_initialize();
     MyOS_taskCreate(waitingTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
-    MyOS_taskCreate(buttonTaskA, /*parameters=*/NULL, 1,/*handle=*/NULL);
-    MyOS_taskCreate(buttonTaskB, /*parameters=*/NULL, 2,/*handle=*/NULL);
-
+    MyOS_taskCreate(
+        buttonTask, 
+        /*parameters=*/__pkg_tec_ev(TEC1, 0b001), 
+        /*priority=*/2,
+        /*handle=*/NULL
+    );
+    MyOS_taskCreate(
+        buttonTask, 
+        /*parameters=*/__pkg_tec_ev(TEC2, 0b010), 
+        /*priority=*/2,
+        /*handle=*/NULL
+    );
+    MyOS_taskCreate(
+        buttonTask, 
+        /*parameters=*/__pkg_tec_ev(TEC3, 0b100), 
+        /*priority=*/1, // Won't run!
+        /*handle=*/NULL
+    );
     for (;;);
 }
