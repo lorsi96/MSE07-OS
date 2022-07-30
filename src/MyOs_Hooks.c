@@ -2,7 +2,7 @@
 #include "MyOs_Hooks.h"
 
 
-__weak void MyOs_returnHook() {
+__weak void MyOs_returnHook(MyOs_TaskHandle_t returningTask) {
     for(;;);
 }
 

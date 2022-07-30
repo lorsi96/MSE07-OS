@@ -5,10 +5,11 @@
 /**
  * @brief Task return hook
  * 
+ * @param returningTask handle of the task that returned.
  * @details Called only in case a task does return, which should never happen.
  * 
  */
-void MyOs_returnHook();
+void MyOs_returnHook(MyOs_TaskHandle_t returningTask);
 
 /**
  * @brief System tick hook.

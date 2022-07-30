@@ -86,6 +86,11 @@ static inline void __MyOs_configurePendSv() {
     NVIC_SetPriority(PendSV_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
 }
 
+
+static void __MyOs_returnHookWrapper() {
+    MyOs_t* self = __MyOs_getInstance(); 
+    MyOs_returnHook(&self->tasks[self->currentTaskId]);
+}
 /* ************************************************************************* */
 /*                                ISR Handlers                               */
 /* ************************************************************************* */
@@ -107,6 +112,7 @@ static void __MyOs_initTaskStack(MyOs_TCB_t* tcb, const void* taskCode, const vo
     tcb->stack.xpsr = INIT_XPSR;
     tcb->stack.lrPrev = EXEC_RETURN;
     tcb->stack.pc = (uint32_t)taskCode;
+    tcb->stack.lr = (uint32_t)__MyOs_returnHookWrapper;
     tcb->stack.r0 = (uint32_t)taskParams;
     tcb->stack_pointer = (uint32_t)&tcb->stack.r11;
 }

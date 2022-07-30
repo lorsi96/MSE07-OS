@@ -12,7 +12,7 @@ void MyOs_selfBlockTask(void* _) {
 }
 
 /* ********************************* Hooks ********************************* */
-void MyOs_returnHook() {
+void MyOs_returnHook(MyOs_TaskHandle_t returningTask) {
     gpioWrite(LED2, true);
 }
 
