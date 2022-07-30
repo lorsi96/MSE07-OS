@@ -248,7 +248,7 @@ void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags) {
     } else {
         __MyOs_raiseError(MyOs_eventWait, MY_OS_ERROR_EVENT_ALREADY_AWAITED);
     }
-    while(!(ev->flags ^ flags)) {
+    while(!((ev->flags & flags) == flags)) {
         MyOs_blockTask(NULL);
     }
 }
