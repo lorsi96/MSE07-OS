@@ -49,6 +49,15 @@ void waitingTask(void* _) {
     }
 }
 
+void blinkyTask(void* _) {
+    for(;;) {
+        gpioToggle(LED1);
+        MyOs_taskDelay(1000);
+        gpioToggle(LED1);
+        MyOs_taskDelay(1000);
+    }
+}
+
 uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) {
     return (tec << 8) | evt;
 }
@@ -95,6 +104,12 @@ int main(void) {
         buttonTask, 
         /*parameters=*/(void*)__pkg_tec_ev(TEC3, 0b100), 
         /*priority=*/1, // Won't run!
+        /*handle=*/NULL
+    );
+    MyOS_taskCreate(
+        blinkyTask, 
+        /*parameters=*/NULL, 
+        /*priority=*/2, 
         /*handle=*/NULL
     );
     for (;;);

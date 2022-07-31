@@ -75,6 +75,7 @@ typedef struct {
     uint8_t id;
     MyOs_TaskState_t state;
     uint8_t priority;
+    uint32_t delayCount;
 } MyOs_TCB_t;
 
 /**
@@ -96,7 +97,9 @@ typedef enum {
     MY_OS_ERROR_INVALID_TASK_STATE = 2,
     MY_OS_ERROR_NO_TASKS = 3,
     MY_OS_ERROR_TASK_ID_BLOCKED = 4,
-    MY_OS_ERROR_EVENT_ALREADY_AWAITED = 5
+    MY_OS_ERROR_EVENT_ALREADY_AWAITED = 5,
+    MY_OS_ERROR_TASK_CALLED_BEFORE_DELAY_FINISHED = 6,
+    MY_OS_ERROR_DELETE_NOT_IMPLEMENTED = 7,
 } MyOs_Error_t;
 
 /**
@@ -110,7 +113,7 @@ typedef MyOs_TCB_t* MyOs_TaskHandle_t;
  *
  */
 typedef struct {
-    MyOs_TCB_t tasks[MAX_TASKS_N];  //!< Static memory allocated for tasks.
+    MyOs_TaskHandle_t tasks[MAX_TASKS_N+1];  //!< Static memory allocated for tasks.
     uint8_t numberOfTasks;          //!< Current number of tasks being used.
     int8_t currentTaskId;           //!< Id of currently running task.
     int8_t nextTaskId;              //!< Id of task to be run afterwards.

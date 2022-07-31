@@ -46,8 +46,12 @@ void MyOS_taskCreate(const void* taskCode, void* parameters, uint8_t priority,
  */
 void MyOs_taskYield();
 
+void MyOs_taskDelay(const uint32_t ticks);
+
 void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
 
 void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle);
+
+MyOs_TaskHandle_t MyOs_getCurrentTask();
 
 #endif  // __MY_OS_CORE__
