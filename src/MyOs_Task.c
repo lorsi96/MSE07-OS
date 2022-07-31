@@ -97,11 +97,20 @@ void MyOs_taskDelay(const uint32_t ticks) {
 
 /* *************************** Memory Management *************************** */
 MyOs_TaskHandle_t __MyOs_taskNew() {
+#ifdef MY_OS_USE_DYNAMIC_MEMORY
     MyOs_TaskHandle_t task;
     if (!(task = calloc(sizeof(MyOs_TCB_t), 1))) {
         MyOs_mallocHook(MyOS_taskCreate);
     }
     return task;
+#else
+    static MyOs_TCB_t __tasks[MAX_TASKS_N] = {0};
+    static uint8_t __tasks_index = 0;
+    if (++__tasks_index > MAX_TASKS_N) {
+        MyOs_mallocHook(MyOS_taskCreate);
+    }
+    return &__tasks[__tasks_index];
+#endif
 }
 
 void __MyOs_taskDelete(MyOs_TaskHandle_t task) {
