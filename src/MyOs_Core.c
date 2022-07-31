@@ -60,6 +60,7 @@ static void __MyOs_scheduler() {
                     self->contextSwitchRequested = true;
                     return; // Next task found.
                 case MY_OS_TASK_STATE_BLOCKED: 
+                    break;
                 case MY_OS_TASK_STATE_RUNNING: 
                     self->nextTaskId = candidateTaskId;
                     self->contextSwitchRequested = true;

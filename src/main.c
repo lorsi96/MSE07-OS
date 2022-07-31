@@ -81,19 +81,19 @@ int main(void) {
     MyOS_taskCreate(waitingTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
     MyOS_taskCreate(
         buttonTask, 
-        /*parameters=*/__pkg_tec_ev(TEC1, 0b001), 
+        /*parameters=*/(void*)__pkg_tec_ev(TEC1, 0b001), 
         /*priority=*/2,
         /*handle=*/NULL
     );
     MyOS_taskCreate(
         buttonTask, 
-        /*parameters=*/__pkg_tec_ev(TEC2, 0b010), 
+        /*parameters=*/(void*)__pkg_tec_ev(TEC2, 0b010), 
         /*priority=*/2,
         /*handle=*/NULL
     );
     MyOS_taskCreate(
         buttonTask, 
-        /*parameters=*/__pkg_tec_ev(TEC3, 0b100), 
+        /*parameters=*/(void*)__pkg_tec_ev(TEC3, 0b100), 
         /*priority=*/1, // Won't run!
         /*handle=*/NULL
     );
