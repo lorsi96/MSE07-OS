@@ -99,6 +99,6 @@ void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags);
 
 /** 
  * @}
- * /
+ */
 
 #endif  // __MY_OS_EVENT__
