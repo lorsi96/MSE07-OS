@@ -17,6 +17,7 @@
 #include <stdint.h>
 
 #include "MyOs_Kernel.h"
+#include "MyOs_Task.h"
 #include "MyOs_Types.h"
 
 /* ************************************************************************* */
@@ -24,11 +25,11 @@
 /* ************************************************************************* */
 
 /**
- * @brief creates an event object.
+ * @brief creates an event object using static memory.
  *
- * @param ev event container to be initialized.
+ * @param[inout] event event container to be initialized.
  */
-void MyOs_createEvent(MyOs_Event_t* ev);
+void MyOs_createEventStatic(MyOs_Event_t* event);
 
 /**
  * @brief overwrites the entire event flags.

@@ -34,4 +34,18 @@ MyOs_TaskHandle_t MyOs_getCurrentTask();
  */
 void MyOs_taskDelay(const uint32_t ticks);
 
+/**
+ * @brief Blocks a given task.
+ * 
+ * @param taskHandle task to be blocked.
+ */
+void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
+
+/**
+ * @brief Unblocks a given task.
+ * 
+ * @param taskHandle task to be unblocked.
+ */
+void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle);
+
 #endif  // __MY_OS_TASK__
