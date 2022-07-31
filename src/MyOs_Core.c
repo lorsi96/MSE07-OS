@@ -11,11 +11,9 @@
 #include "MyOs_Core.h"
 #include "MyOs_Hooks.h"
 #include "MyOs_Event.h"
+#include <stdlib.h>
 
 #include "board.h"
-#define IDLE_TASK_ID  MAX_TASKS_N
-
-
 
 /* ************************************************************************* */
 /*                             Private Functions                             */
@@ -44,7 +42,7 @@ uint8_t __task_index = 0;
 
 
 MyOs_TaskHandle_t MyOs_TaskManager_create() {
-    return &__tasks[++__task_index];
+    return calloc(sizeof(MyOs_TCB_t), 1);
 }
 
 MyOs_TaskHandle_t MyOs_TaskManager_delete() {
@@ -67,8 +65,9 @@ static void __MyOs_scheduler() {
 
     uint8_t candidateTaskId = (self->currentTaskId + 1) % self->numberOfTasks;
     self->contextSwitchRequested = false;
-    for(uint8_t p=self->mxPrio; p > 0; p--) {
+    for(uint8_t p=self->mxPrio; p >= 0; p--) {
         uint8_t firstPTaskId = 0xFF;
+        uint8_t nTasks = 0;
         do {
             if(self->tasks[candidateTaskId]->priority == p) {
                 if (firstPTaskId == 0xFF) firstPTaskId = candidateTaskId; 
@@ -88,11 +87,9 @@ static void __MyOs_scheduler() {
                 }
             }
             candidateTaskId = (candidateTaskId + 1) % self->numberOfTasks;
-        } while(candidateTaskId != firstPTaskId);
+            nTasks++;
+        } while(candidateTaskId != firstPTaskId && (nTasks < self->numberOfTasks));
     }
-    // No task is ready, run Idle task.
-    self->nextTaskId = IDLE_TASK_ID;
-    self->contextSwitchRequested = true;
 }
 
 static inline void __MyOs_requestPendSv() {
@@ -138,9 +135,7 @@ static void __MyOs_initTaskStack(MyOs_TCB_t* tcb, const void* taskCode, const vo
 }
 
 static void __MyOs_initIdleTask() {
-    MyOs_t* self = __MyOs_getInstance();
-    self->tasks[IDLE_TASK_ID] = MyOs_TaskManager_create();
-    __MyOs_initTaskStack(self->tasks[IDLE_TASK_ID], MyOs_idleTask, NULL);
+    MyOS_taskCreate(MyOs_idleTask, NULL, 0xFF, NULL);
 }
 
 static MyOs_TaskHandle_t __MyOs_getCurrentTask() {
@@ -173,9 +168,9 @@ void MyOS_taskCreate(const void* taskCode, void* parameters, uint8_t priority,
     self->tasks[self->numberOfTasks] = MyOs_TaskManager_create();
     MyOs_TCB_t* tcb = self->tasks[self->numberOfTasks];
     tcb->id = self->numberOfTasks++;
-    tcb->priority = priority;
-    if(priority > self->mxPrio) {
-        self->mxPrio = priority;
+    tcb->priority = priority+1;
+    if(tcb->priority > self->mxPrio) {
+        self->mxPrio = tcb->priority;
     }
 
     __MyOs_initTaskStack(tcb, taskCode, parameters);
@@ -193,7 +188,7 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle) {
         taskId = self->currentTaskId;
     } else {
         taskId = taskHandle->id;
-        if(taskId == IDLE_TASK_ID) {
+        if(self->tasks[taskId]->priority == 0) {
             __MyOs_raiseError(MyOs_blockTask, MY_OS_ERROR_TASK_ID_BLOCKED);
         }
     }
