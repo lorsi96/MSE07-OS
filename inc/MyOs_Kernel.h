@@ -31,7 +31,7 @@ void MyOs_initialize();
 
 /**
  * @brief Request a scheduler run & potential context switch.
- * 
+ *
  */
 void MyOs_yield();
 
@@ -40,18 +40,17 @@ void MyOs_yield();
 /* ************************************************************************* */
 /**
  * @brief Retrieves MyOs only instance.
- * 
- * @return MyOs_t* 
+ *
+ * @return MyOs_t*
  */
 MyOs_t* MyOs_getInstance();
 
 /**
  * @brief Rises a MyOs error and calls the errorHook afterwards.
- * 
+ *
  * @param caller caller function.
  * @param err error type.
  */
 void MyOs_raiseError(void* caller, MyOs_Error_t err);
-
 
 #endif  // __MY_OS_KERNEL__

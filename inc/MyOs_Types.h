@@ -14,8 +14,8 @@
 /* ************************************************************************* */
 /*                                  Includes                                 */
 /* ************************************************************************* */
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /* ************************************************************************* */
 /*                           Preprocessor Constants                          */
@@ -114,24 +114,21 @@ typedef MyOs_TCB_t* MyOs_TaskHandle_t;
  *
  */
 typedef struct {
-    MyOs_TaskHandle_t tasks[MAX_TASKS_N+1];  //!< Static memory allocated for tasks.
-    uint8_t numberOfTasks;          //!< Current number of tasks being used.
-    int8_t currentTaskId;           //!< Id of currently running task.
-    int8_t nextTaskId;              //!< Id of task to be run afterwards.
-    MyOs_Error_t error;             //!< Cached error. See #MyOs_Error_t.
+    MyOs_TaskHandle_t
+        tasks[MAX_TASKS_N + 1];  //!< Static memory allocated for tasks.
+    uint8_t numberOfTasks;       //!< Current number of tasks being used.
+    int8_t currentTaskId;        //!< Id of currently running task.
+    int8_t nextTaskId;           //!< Id of task to be run afterwards.
+    MyOs_Error_t error;          //!< Cached error. See #MyOs_Error_t.
     MyOs_GeneralState_t state;
     bool contextSwitchRequested;
     uint8_t mxPrio;
 } MyOs_t;
 
-
-
 typedef struct {
     uint8_t flags;
     MyOs_TaskHandle_t waitingTask;
 } MyOs_Event_t;
-
-
 
 /* ****************************** End Of File ****************************** */
 #endif  // __MY_OS_TYPES__

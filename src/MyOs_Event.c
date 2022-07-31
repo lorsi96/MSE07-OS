@@ -1,20 +1,22 @@
 /**
  * @file MyOs_Event.c
  * @author Lucas Orsi (lorsi@itba.edu.ar)
- * @brief 
+ * @brief
  * @version 0.1
  * @date 2022-07-31
- * 
+ *
  * @copyright Copyright (c) 2022
- * 
+ *
  */
 
 /* ************************************************************************* */
 /*                                 Inclusions                                */
 /* ************************************************************************* */
-#include "MyOs_Kernel.h"
 #include "MyOs_Event.h"
+
 #include <stdlib.h>
+
+#include "MyOs_Kernel.h"
 
 /* ************************************************************************* */
 /*                        Public Functions Definitions                       */
@@ -27,37 +29,37 @@ void MyOs_createEvent(MyOs_Event_t* ev) {
 
 void MyOs_eventSet(MyOs_Event_t* ev, uint8_t flags) {
     ev->flags = flags;
-    if(ev->waitingTask) {
+    if (ev->waitingTask) {
         MyOs_unblockTask(ev->waitingTask);
     }
 }
 
 void MyOs_eventPost(MyOs_Event_t* ev, uint8_t flags) {
     ev->flags |= flags;
-    if(ev->waitingTask) {
+    if (ev->waitingTask) {
         MyOs_unblockTask(ev->waitingTask);
     }
 }
 
 void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags) {
-    if(!ev->waitingTask) {
+    if (!ev->waitingTask) {
         ev->waitingTask = MyOs_getCurrentTask();
     } else {
         MyOs_raiseError(MyOs_eventWait, MY_OS_ERROR_EVENT_ALREADY_AWAITED);
     }
-    while(!(ev->flags & flags)) {
+    while (!(ev->flags & flags)) {
         MyOs_blockTask(NULL);
     }
     ev->waitingTask = NULL;
 }
 
 void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags) {
-    if(!ev->waitingTask) {
+    if (!ev->waitingTask) {
         ev->waitingTask = MyOs_getCurrentTask();
     } else {
         MyOs_raiseError(MyOs_eventWait, MY_OS_ERROR_EVENT_ALREADY_AWAITED);
     }
-    while(!((ev->flags & flags) == flags)) {
+    while (!((ev->flags & flags) == flags)) {
         MyOs_blockTask(NULL);
     }
 }

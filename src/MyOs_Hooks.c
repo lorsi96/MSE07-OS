@@ -1,21 +1,18 @@
-#include "MyOs_Types.h"
 #include "MyOs_Hooks.h"
 
-
 __weak void MyOs_returnHook(MyOs_TaskHandle_t returningTask) {
-    for(;;) {
+    for (;;) {
         __asm("wfi");
     }
 }
 
-__weak void MyOs_tickHook() {
-    __asm volatile("nop");
-}
+__weak void MyOs_tickHook() { __asm volatile("nop"); }
 
 __weak void MyOs_errorHook(void* caller, MyOs_Error_t err) {
     (void)caller;
     (void)err;
-    for(;;);
+    for (;;)
+        ;
 }
 
 __weak void MyOs_mallocHook(void* caller) {
@@ -23,7 +20,7 @@ __weak void MyOs_mallocHook(void* caller) {
 }
 
 __weak void MyOs_idleTask() {
-    for(;;) {
+    for (;;) {
         __asm("wfi");
     }
 }
