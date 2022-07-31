@@ -124,11 +124,6 @@ typedef struct {
     bool contextSwitchRequested;
     uint8_t mxPrio;
 } MyOs_t;
+/* ************************************************************************* */
 
-typedef struct {
-    uint8_t flags;
-    MyOs_TaskHandle_t waitingTask;
-} MyOs_Event_t;
-
-/* ****************************** End Of File ****************************** */
 #endif  // __MY_OS_TYPES__

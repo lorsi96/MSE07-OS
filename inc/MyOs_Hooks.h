@@ -1,10 +1,29 @@
+/**
+ * @file MyOs_Hooks.h
+ * @author Lucas Orsi (lorsi@itba.edu.ar)
+ * @brief
+ * @version 0.1
+ * @date 2022-07-31
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #ifndef __MY_OS_HOOKS__
 #define __MY_OS_HOOKS__
 
+/* ************************************************************************* */
+/*                                 Inclusions                                */
+/* ************************************************************************* */
 #include "MyOs_Types.h"
 
+/* ************************************************************************* */
+/*                                   Macros                                  */
+/* ************************************************************************* */
 #define __weak __attribute__((weak))
 
+/* ************************************************************************* */
+/*                              Public Functions                             */
+/* ************************************************************************* */
 /**
  * @brief Task return hook
  *
@@ -35,12 +54,14 @@ void MyOs_errorHook(void* caller, MyOs_Error_t err);
  *
  * @param caller function whose allocation failed.
  */
-void MyOs_mallocHook(void* caller);
+void MyOs_memoryInsufficientHook(void* caller);
 
 /**
  * @brief Idle task. Called only when no other task is available.
  *
  */
 void MyOs_idleTask();
+
+/* ************************************************************************* */
 
 #endif  // __MY_OS_HOOKS__

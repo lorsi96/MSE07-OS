@@ -1,6 +1,19 @@
+/**
+ * @file MyOs_Task.h
+ * @author Lucas Orsi (lorsi@itba.edu.ar)
+ * @brief
+ * @version 0.1
+ * @date 2022-07-31
+ *
+ * @copyright Copyright (c) 2022
+ *
+ */
 #ifndef __MY_OS_TASK__
 #define __MY_OS_TASK__
 
+/* ************************************************************************* */
+/*                                 Inclusions                                */
+/* ************************************************************************* */
 #include <stdint.h>
 
 #include "MyOs_Kernel.h"
@@ -36,16 +49,17 @@ void MyOs_taskDelay(const uint32_t ticks);
 
 /**
  * @brief Blocks a given task.
- * 
+ *
  * @param taskHandle task to be blocked.
  */
 void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
 
 /**
  * @brief Unblocks a given task.
- * 
+ *
  * @param taskHandle task to be unblocked.
  */
 void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle);
 
+/* ************************************************************************* */
 #endif  // __MY_OS_TASK__
