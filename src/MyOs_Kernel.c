@@ -16,25 +16,21 @@
 #include "MyOs_Task.h"
 #include "board.h"
 
+
 /* ************************************************************************* */
 /*                             Private Functions                             */
 /* ************************************************************************* */
-MyOs_t* MyOs_getInstance() {
-    static MyOs_t instance = {.error = MY_OS_ERROR_NONE,
-                              .numberOfTasks = 0,
-                              .currentTaskId = -1,
-                              .nextTaskId = -1,
-                              .state = MY_OS_GENERAL_STATE_RESET};
-    return &instance;
-}
-
-void MyOs_raiseError(void* caller, MyOs_Error_t err) {
+void __MyOs_spinDelayTicks() {
     MyOs_t* self = MyOs_getInstance();
-    self->error = err;
-    MyOs_errorHook(caller, err);
+    for (uint8_t taskId = 0; taskId < self->numberOfTasks; taskId++) {
+        MyOs_TaskHandle_t t = self->tasks[taskId];
+        if (t->state == MY_OS_TASK_STATE_BLOCKED && t->delayCount > 0) {
+            if (--t->delayCount == 0) {
+                t->state = MY_OS_TASK_STATE_READY;
+            }
+        }
+    }
 }
-
-void __MyOs_spinDelayTicks();
 
 static void __MyOs_scheduler() {
     MyOs_t* self = MyOs_getInstance();
@@ -123,21 +119,24 @@ static void __MyOs_initIdleTask() {
 /*                              Public Functions                             */
 /* ************************************************************************* */
 
+MyOs_t* MyOs_getInstance() {
+    static MyOs_t instance = {.error = MY_OS_ERROR_NONE,
+                              .numberOfTasks = 0,
+                              .currentTaskId = -1,
+                              .nextTaskId = -1,
+                              .state = MY_OS_GENERAL_STATE_RESET};
+    return &instance;
+}
+
+void MyOs_raiseError(void* caller, MyOs_Error_t err) {
+    MyOs_t* self = MyOs_getInstance();
+    self->error = err;
+    MyOs_errorHook(caller, err);
+}
+
 void MyOs_initialize(void) {
     __MyOs_initIdleTask();
     __MyOs_configurePendSv();
-}
-
-void __MyOs_spinDelayTicks() {
-    MyOs_t* self = MyOs_getInstance();
-    for (uint8_t taskId = 0; taskId < self->numberOfTasks; taskId++) {
-        MyOs_TaskHandle_t t = self->tasks[taskId];
-        if (t->state == MY_OS_TASK_STATE_BLOCKED && t->delayCount > 0) {
-            if (--t->delayCount == 0) {
-                t->state = MY_OS_TASK_STATE_READY;
-            }
-        }
-    }
 }
 
 /* ****************** Pend SV Interrupt: Context Switcher ****************** */
