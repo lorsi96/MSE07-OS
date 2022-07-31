@@ -34,7 +34,7 @@
 #ifndef _MAIN_H_
 #define _MAIN_H_
 
-/** \addtogroup blink Bare-metal blink example
+/** \addtogroup MyOs_Example_App
  ** @{ */
 
 /*==================[inclusions]=============================================*/

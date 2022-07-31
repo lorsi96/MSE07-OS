@@ -90,7 +90,7 @@ void buttonTask(void* buttonEvt) {
 int main(void) {
     initHardware();
 
-    MyOs_createEventStatic(&myEvent);
+    MyOs_eventCreate(&myEvent);
 
     MyOs_initialize();
     MyOS_taskCreate(waitingTask, /*parameters=*/NULL, 2, /*handle=*/NULL);

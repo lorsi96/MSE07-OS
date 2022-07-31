@@ -11,6 +11,11 @@
 
 #ifndef __MY_OS_EVENT__
 #define __MY_OS_EVENT__
+
+/** @addtogroup MyOs_Event
+ * @{
+ */
+
 /* ************************************************************************* */
 /*                                 Inclusions                                */
 /* ************************************************************************* */
@@ -23,9 +28,13 @@
 /* ************************************************************************* */
 /*                                Public Types                               */
 /* ************************************************************************* */
+/**
+ * @brief Event flags synchronization primitive.
+ *
+ */
 typedef struct {
-    uint8_t flags;
-    MyOs_TaskHandle_t waitingTask;
+    uint8_t flags;                  //<! flags representing the event.
+    MyOs_TaskHandle_t waitingTask;  //<! task waiting for event.
 } MyOs_Event_t;
 
 /* ************************************************************************* */
@@ -33,16 +42,16 @@ typedef struct {
 /* ************************************************************************* */
 
 /**
- * @brief creates an event object using static memory.
+ * @brief Creates an event object using static memory.
  *
  * @param[inout] event event container to be initialized.
  */
-void MyOs_createEventStatic(MyOs_Event_t* event);
+void MyOs_eventCreate(MyOs_Event_t* event);
 
 /**
- * @brief overwrites the entire event flags.
+ * @brief Overwrites the entire event flags.
  *
- * @details differs from eventPost in the sense that eventSet overwrites the
+ * @details  Differs from eventPost in the sense that eventSet overwrites the
  *           flag values, whereas post performs an "or" operation with the
  *           incoming value and the current event state/flags.
  *
@@ -52,9 +61,9 @@ void MyOs_createEventStatic(MyOs_Event_t* event);
 void MyOs_eventSet(MyOs_Event_t* ev, uint8_t flags);
 
 /**
- * @brief post any number of events in a single operation.
+ * @brief Posts any number of events in a single operation.
  *
- * @details differs from eventSet in the sense that eventSet overwrites the
+ * @details  Differs from eventSet in the sense that eventSet overwrites the
  *           flag values, whereas post performs an "or" operation with the
  *           incoming value and the current event state/flags.
  *
@@ -64,9 +73,9 @@ void MyOs_eventSet(MyOs_Event_t* ev, uint8_t flags);
 void MyOs_eventPost(MyOs_Event_t* ev, uint8_t flags);
 
 /**
- * @brief block task until any listed event occurs.
+ * @brief Blocks task until any listed event occurs.
  *
- * @details the activation of ANY flag from the flags parameter will unblock
+ * @details The activation of ANY flag from the flags parameter will unblock
  *          the waiting task. @see MyOs_eventWaitAll for a different behaviour.
  *
  * @param ev initialized event object.
@@ -75,9 +84,9 @@ void MyOs_eventPost(MyOs_Event_t* ev, uint8_t flags);
 void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags);
 
 /**
- * @brief block task until agoup of events occur.
+ * @brief Blocks task until agoup of events occur.
  *
- * @details only activation of ALL of the flags in the flags parameter will
+ * @details Only the activation of ALL of the flags in the flags parameter will
  *          unblock the waiting task. @see MyOs_eventWait for a different
  *          behaviour.
  *
@@ -87,5 +96,9 @@ void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags);
 void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags);
 
 /* ************************************************************************* */
+
+/** 
+ * @}
+ * /
 
 #endif  // __MY_OS_EVENT__

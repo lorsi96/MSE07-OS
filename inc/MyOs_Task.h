@@ -11,6 +11,10 @@
 #ifndef __MY_OS_TASK__
 #define __MY_OS_TASK__
 
+/** @addtogroup MyOs_Task
+ * @{
+ */
+
 /* ************************************************************************* */
 /*                                 Inclusions                                */
 /* ************************************************************************* */
@@ -60,6 +64,10 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
  * @param taskHandle task to be unblocked.
  */
 void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle);
+
+/**
+ * @}
+ */
 
 /* ************************************************************************* */
 #endif  // __MY_OS_TASK__

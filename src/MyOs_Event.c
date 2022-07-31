@@ -22,7 +22,7 @@
 /*                        Public Functions Definitions                       */
 /* ************************************************************************* */
 
-void MyOs_createEventStatic(MyOs_Event_t* ev) {
+void MyOs_eventCreate(MyOs_Event_t* ev) {
     ev->flags = 0x00;
     ev->waitingTask = NULL;
 }
