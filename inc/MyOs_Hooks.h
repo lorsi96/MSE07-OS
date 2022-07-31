@@ -28,6 +28,14 @@ void MyOs_tickHook();
 void MyOs_errorHook(void* caller, MyOs_Error_t err);
 
 /**
+ * @brief Called when the system memory is insuficcient to allocate a new obj.
+ * 
+ * @param caller function whose allocation failed.
+ */
+void MyOs_mallocHook(void* caller);
+
+
+/**
  * @brief Idle task. Called only when no other task is available.
  * 
  */

@@ -18,6 +18,10 @@ __weak void MyOs_errorHook(void* caller, MyOs_Error_t err) {
     for(;;);
 }
 
+__weak void MyOs_mallocHook(void* caller) {
+    MyOs_errorHook(caller, MY_OS_ERROR_MEMORY_ALLOCATION_ERROR);
+}
+
 __weak void MyOs_idleTask() {
     for(;;) {
         __asm("wfi");

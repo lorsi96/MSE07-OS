@@ -3,9 +3,8 @@
 /* ************************************************************************* */
 #include "main.h"
 
-#include "MyOs_Core.h"
+#include "MyOs_Kernel.h"
 #include "MyOs_Event.h"
-// #include "MyOs_TestTasks.h"
 #include "board.h"
 #include "sapi.h"
 
@@ -28,6 +27,24 @@ static void initHardware(void) {
 }
 
 
+void MyOs_errorHook(void* caller, MyOs_Error_t err) {
+    gpioWrite(LED3, 1);
+    for(;;);
+}
+
+
+uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) {
+    return (tec << 8) | evt;
+}
+
+void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
+    *tec = (uint16_t)packed >> 8;
+    *evt = (uint16_t)packed & 0xFF;
+}
+
+/* ************************************************************************* */
+/*                              Sync Primitives                              */
+/* ************************************************************************* */
 MyOs_Event_t myEvent;
 
 /* ************************************************************************* */
@@ -57,16 +74,6 @@ void blinkyTask(void* _) {
         MyOs_taskDelay(1000);
     }
 }
-
-uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) {
-    return (tec << 8) | evt;
-}
-
-void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
-    *tec = (uint16_t)packed >> 8;
-    *evt = (uint16_t)packed & 0xFF;
-}
-
 
 void buttonTask(void* buttonEvt) {
     uint8_t tec, evt;

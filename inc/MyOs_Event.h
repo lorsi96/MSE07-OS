@@ -1,10 +1,23 @@
+/**
+ * @file MyOs_Event.h
+ * @author Lucas Orsi (lorsi@itba.edu.ar)
+ * @brief 
+ * @version 0.1
+ * @date 2022-07-31
+ * 
+ * @copyright Copyright (c) 2022
+ * 
+ */
+
 #ifndef __MY_OS_EVENT__
 #define __MY_OS_EVENT__
-
+/* ************************************************************************* */
+/*                                 Inclusions                                */
+/* ************************************************************************* */
 #include <stdint.h>
 
 #include "MyOs_Types.h"
-#include "MyOs_Core.h"
+#include "MyOs_Kernel.h"
 
 /* ************************************************************************* */
 /*                              Public Functions                             */

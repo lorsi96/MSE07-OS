@@ -1,5 +1,5 @@
 /**
- * @file MyOs_Core.h
+ * @file MyOs_Kernel.h
  * @author Lucas Orsi (lorsi@itba.edu.ar)
  * @brief
  * @version 0.1
@@ -11,8 +11,8 @@
 /* ************************************************************************* */
 /*                                 Inclusions                                */
 /* ************************************************************************* */
-#ifndef __MY_OS_CORE__
-#define __MY_OS_CORE__
+#ifndef __MY_OS_KERNEL__
+#define __MY_OS_KERNEL__
 
 #include <stdint.h>
 
@@ -30,28 +30,28 @@
 void MyOs_initialize();
 
 /**
- * @brief Creates a task.
- *
- * @param[in] taskCode function that implements the task.
- * @param[in] parameters parameters passed into the task.
- * @param[out] handle used to pass out the created task's handle.
- */
-void MyOS_taskCreate(const void* taskCode, void* parameters, uint8_t priority,
-                             MyOs_TaskHandle_t* taskHandle);
-
-
-/**
- * @brief used to request a context switch to another task if possible.
+ * @brief Request a scheduler run & potential context switch.
  * 
  */
-void MyOs_taskYield();
+void MyOs_yield();
 
-void MyOs_taskDelay(const uint32_t ticks);
+/* ************************************************************************* */
+/*                         Internals Public Functions                        */
+/* ************************************************************************* */
+/**
+ * @brief Retrieves MyOs only instance.
+ * 
+ * @return MyOs_t* 
+ */
+MyOs_t* MyOs_getInstance();
 
-void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
+/**
+ * @brief Rises a MyOs error and calls the errorHook afterwards.
+ * 
+ * @param caller caller function.
+ * @param err error type.
+ */
+void MyOs_raiseError(void* caller, MyOs_Error_t err);
 
-void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle);
 
-MyOs_TaskHandle_t MyOs_getCurrentTask();
-
-#endif  // __MY_OS_CORE__
+#endif  // __MY_OS_KERNEL__
