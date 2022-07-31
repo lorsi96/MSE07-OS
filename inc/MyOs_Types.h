@@ -17,15 +17,13 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+#include "MysOs_Config.h"
+
 /* ************************************************************************* */
 /*                           Preprocessor Constants                          */
 /* ************************************************************************* */
-#define MAX_TASKS_N 8
-#define STACK_SIZE 64
 #define STACK_FRAME_SIZE 8
 #define FULL_REG_STACKING_SIZE (STACK_FRAME_SIZE + 8 + 1)
-#define INIT_XPSR 1 << 24
-#define EXEC_RETURN 0xFFFFFFF9
 
 /* ************************************************************************* */
 /*                                   Types                                   */
