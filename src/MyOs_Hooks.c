@@ -3,7 +3,9 @@
 
 
 __weak void MyOs_returnHook(MyOs_TaskHandle_t returningTask) {
-    for(;;);
+    for(;;) {
+        __asm("wfi");
+    }
 }
 
 __weak void MyOs_tickHook() {
