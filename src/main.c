@@ -5,6 +5,7 @@
 
 #include "MyOs_Event.h"
 #include "MyOs_Queue.h"
+#include "MyOs_Semaphore.h"
 #include "MyOs_Task.h"
 #include "MyOs_Types.h"
 #include "board.h"
@@ -48,6 +49,8 @@ void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
 /* ************************************************************************* */
 MyOs_Event_t myEvent;
 MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
+MyOs_semaphore_CREATE_STATIC(mySemaphore);
+
 
 /* ************************************************************************* */
 /*                             Tasks Definitions                             */
@@ -71,7 +74,7 @@ void eventConsumerTask(void* _) {
 void blinkyRequesterTask(void* _) {
     uint8_t msg = 0;
     for(;;) {
-        msg = (msg + 1) % 3;
+        msg = (msg + 1) % 2;
         MyOs_queueSend(&myQueue, &msg);
         MyOs_taskDelay(1000);
     }
@@ -79,10 +82,24 @@ void blinkyRequesterTask(void* _) {
 
 void blinkyConsumerTask(void* _) {
     uint8_t msg;
-    uint32_t leds[] = {LED1, LED2, LED3};
+    uint32_t leds[] = {LED1, LED2};
     for(;;) {
         MyOs_queueReceive(&myQueue, &msg);
         gpioToggle(leds[msg]);
+    }
+}
+
+void blinkySemaphoreRequesterTask(void* _) {
+    for(;;) {
+        MyOs_semaphoreGive(&mySemaphore);
+        MyOs_taskDelay(1000);
+    }
+}
+
+void blinkySemaphoreConsumerTask(void* _) {
+    for(;;) {
+        MyOs_semaphoreTake(&mySemaphore);
+        gpioToggle(LED3);
     }
 }
 
@@ -124,6 +141,14 @@ int main(void) {
                     /*priority=*/2,
                     /*handle=*/NULL);
     MyOS_taskCreate(blinkyConsumerTask,
+                    /*parameters=*/NULL,
+                    /*priority=*/2,
+                    /*handle=*/NULL);
+    MyOS_taskCreate(blinkySemaphoreRequesterTask,
+                    /*parameters=*/NULL,
+                    /*priority=*/2,
+                    /*handle=*/NULL);
+    MyOS_taskCreate(blinkySemaphoreConsumerTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
                     /*handle=*/NULL);
