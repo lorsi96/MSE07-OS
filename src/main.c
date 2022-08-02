@@ -4,6 +4,7 @@
 #include "main.h"
 
 #include "MyOs_Event.h"
+#include "MyOs_Queue.h"
 #include "MyOs_Task.h"
 #include "MyOs_Types.h"
 #include "board.h"
@@ -40,15 +41,18 @@ void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
     *evt = (uint16_t)packed & 0xFF;
 }
 
+#define __array_to_queue_args(arr)  sizeof(arr)/sizeof(arr[0]), sizeof(arr[0]), arr 
+
 /* ************************************************************************* */
 /*                              Sync Primitives                              */
 /* ************************************************************************* */
 MyOs_Event_t myEvent;
+MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
 
 /* ************************************************************************* */
 /*                             Tasks Definitions                             */
 /* ************************************************************************* */
-void waitingTask(void* _) {
+void eventConsumerTask(void* _) {
     for (;;) {
         MyOs_eventWait(&myEvent, 0b11);
         if (myEvent.flags & 0b01) {
@@ -64,12 +68,21 @@ void waitingTask(void* _) {
     }
 }
 
-void blinkyTask(void* _) {
-    for (;;) {
-        gpioToggle(LED1);
+void blinkyRequesterTask(void* _) {
+    uint8_t msg = 0;
+    for(;;) {
+        msg = (msg + 1) % 3;
+        MyOs_queueSend(&myQueue, &msg);
         MyOs_taskDelay(1000);
-        gpioToggle(LED1);
-        MyOs_taskDelay(1000);
+    }
+}
+
+void blinkyConsumerTask(void* _) {
+    uint8_t msg;
+    uint32_t leds[] = {LED1, LED2, LED3};
+    for(;;) {
+        MyOs_queueReceive(&myQueue, &msg);
+        gpioToggle(leds[msg]);
     }
 }
 
@@ -93,7 +106,7 @@ int main(void) {
     MyOs_eventCreate(&myEvent);
 
     MyOs_initialize();
-    MyOS_taskCreate(waitingTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
+    MyOS_taskCreate(eventConsumerTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
     MyOS_taskCreate(buttonTask,
                     /*parameters=*/(void*)__pkg_tec_ev(TEC1, 0b001),
                     /*priority=*/2,
@@ -106,7 +119,11 @@ int main(void) {
                     /*parameters=*/(void*)__pkg_tec_ev(TEC3, 0b100),
                     /*priority=*/1,  // Won't run!
                     /*handle=*/NULL);
-    MyOS_taskCreate(blinkyTask,
+    MyOS_taskCreate(blinkyRequesterTask,
+                    /*parameters=*/NULL,
+                    /*priority=*/2,
+                    /*handle=*/NULL);
+    MyOS_taskCreate(blinkyConsumerTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
                     /*handle=*/NULL);
