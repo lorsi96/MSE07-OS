@@ -44,6 +44,17 @@ typedef struct {
     uint8_t tail;
 } MyOs_Queue_t;
 
+/* ************************************************************************* */
+/*                              Public Functions                             */
+/* ************************************************************************* */
+/**
+ * @brief Declares and creates a queue.
+ * 
+ * @param name the name of the queue variable to be declared.
+ * @param dtype type of the elements that the queue will contain.
+ * @param len queue length (MAX number of elements).
+ * 
+ */
 #define MyOs_queue_CREATE_STATIC(name, dtype, len) \
   uint8_t name##buffer[(sizeof(dtype)) * ((len) + 1)];\
   MyOs_Queue_t name = {\
@@ -55,11 +66,20 @@ typedef struct {
     .tail=0\
   };
 
-/* ************************************************************************* */
-/*                              Public Functions                             */
-/* ************************************************************************* */
+/**
+ * @brief Sends an item to the message queue.
+ * 
+ * @param[in] queue target queue.
+ * @param[in] item referece to the item to be sent.
+ */
 void MyOs_queueSend(MyOs_Queue_t* queue, const void* item);
 
+/**
+ * @brief Receives an element from a queue
+ * 
+ * @param[in] queue target queue.
+ * @param[out] item received from the queue. 
+ */
 void MyOs_queueReceive(MyOs_Queue_t* queue, void* item);
 
 /* ************************************************************************* */

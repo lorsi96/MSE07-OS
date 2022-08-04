@@ -48,7 +48,7 @@ static void __MyOs_scheduler() {
     for (uint8_t p = self->mxPrio; p >= 0; p--) {
         uint8_t firstPTaskId = 0xFF;
         uint8_t nTasks = 0;
-        do {
+        do { // TODO: Implement a better scheduler (but this one works!). 
             if (self->tasks[candidateTaskId]->priority == p) {
                 if (firstPTaskId == 0xFF) firstPTaskId = candidateTaskId;
                 switch (self->tasks[candidateTaskId]->state) {
@@ -84,12 +84,8 @@ static inline void __MyOs_configurePendSv() {
     NVIC_SetPriority(PendSV_IRQn, (1 << __NVIC_PRIO_BITS) - 1);
 }
 
-void MyOs_yield() {
-    MyOs_t* self = MyOs_getInstance();
-    __MyOs_scheduler();
-    if (self->contextSwitchRequested) {
-        __MyOs_requestPendSv();
-    }
+static void __MyOs_initIdleTask() {
+    MyOS_taskCreate(MyOs_idleTask, NULL, 0xFF, NULL);
 }
 
 /* ************************************************************************* */
@@ -108,10 +104,6 @@ void SysTick_Handler(void) {  // Overrides weak handler.
     if (self->contextSwitchRequested) {
         __MyOs_requestPendSv();
     }
-}
-
-static void __MyOs_initIdleTask() {
-    MyOS_taskCreate(MyOs_idleTask, NULL, 0xFF, NULL);
 }
 
 /* ************************************************************************* */
@@ -136,6 +128,14 @@ void MyOs_raiseError(void* caller, MyOs_Error_t err) {
 void MyOs_initialize(void) {
     __MyOs_initIdleTask();
     __MyOs_configurePendSv();
+}
+
+void MyOs_yield() {
+    MyOs_t* self = MyOs_getInstance();
+    __MyOs_scheduler();
+    if (self->contextSwitchRequested) {
+        __MyOs_requestPendSv();
+    }
 }
 
 /* ****************** Pend SV Interrupt: Context Switcher ****************** */

@@ -103,7 +103,7 @@ void MyOs_taskDelay(const uint32_t ticks) {
 
 /* *************************** Memory Management *************************** */
 MyOs_TaskHandle_t __MyOs_taskNew() {
-#ifdef MY_OS_USE_DYNAMIC_MEMORY
+#ifdef MY_OS_USE_DYNAMIC_MEMORY  // TODO: this is not yet fully supported.
     MyOs_TaskHandle_t task;
     if (!(task = calloc(sizeof(MyOs_TCB_t), 1))) {
         MyOs_memoryInsufficientHook(MyOS_taskCreate);

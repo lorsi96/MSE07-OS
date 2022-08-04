@@ -38,16 +38,34 @@
  */
 typedef MyOs_Queue_t MyOs_Semaphore_t;
 
-#define MyOs_semaphore_CREATE_STATIC(name)  MyOs_queue_CREATE_STATIC(name, uint8_t, 1);
-
 /* ************************************************************************* */
 /*                              Public Functions                             */
 /* ************************************************************************* */
+
+/**
+ * @brief Declares and creates a semaphore object.
+ * 
+ * @param name name of the semaphore variable.
+ */
+#define MyOs_semaphore_CREATE_STATIC(name) \
+   MyOs_queue_CREATE_STATIC(name, uint8_t, 1);
+
+
+/**
+ * @brief Gives the semaphore.
+ * 
+ * @param semaphore 
+ */
 void MyOs_semaphoreGive(MyOs_Semaphore_t* semaphore) {
     static uint8_t _;
     MyOs_queueSend(semaphore, &_);
 }
 
+/**
+ * @brief Takes the semaphore.
+ * 
+ * @param semaphore 
+ */
 void MyOs_semaphoreTake(MyOs_Semaphore_t* semaphore) {
     static uint8_t _;
     MyOs_queueReceive(semaphore, &_);

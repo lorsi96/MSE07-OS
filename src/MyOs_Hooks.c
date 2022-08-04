@@ -26,10 +26,9 @@ __weak void MyOs_returnHook(MyOs_TaskHandle_t returningTask) {
 __weak void MyOs_tickHook() { __asm volatile("nop"); }
 
 __weak void MyOs_errorHook(void* caller, MyOs_Error_t err) {
-    (void)caller;
-    (void)err;
-    for (;;)
-        ;
+    for (;;) {
+        __asm("wfi");
+    }
 }
 
 __weak void MyOs_memoryInsufficientHook(void* caller) {

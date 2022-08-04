@@ -35,14 +35,7 @@ void MyOs_errorHook(void* caller, MyOs_Error_t err) {
         ;
 }
 
-uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) { return (tec << 8) | evt; }
 
-void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
-    *tec = (uint16_t)packed >> 8;
-    *evt = (uint16_t)packed & 0xFF;
-}
-
-#define __array_to_queue_args(arr)  sizeof(arr)/sizeof(arr[0]), sizeof(arr[0]), arr 
 
 /* ************************************************************************* */
 /*                              Sync Primitives                              */
@@ -53,33 +46,77 @@ MyOs_semaphore_CREATE_STATIC(mySemaphore);
 
 
 /* ************************************************************************* */
+/*                          Utilities for Test Tasks                         */
+/* ************************************************************************* */
+
+/* *********** Functions for packing/unpacking buttons and events ********** */
+uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) { return (tec << 8) | evt; }
+
+void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
+    *tec = (uint16_t)packed >> 8;
+    *evt = (uint16_t)packed & 0xFF;
+}
+
+#define __array_to_queue_args(arr)  sizeof(arr)/sizeof(arr[0]), sizeof(arr[0]), arr 
+
+/* ************************************************************************* */
 /*                             Tasks Definitions                             */
 /* ************************************************************************* */
+
+/* ************************** Events Testing Tasks ************************* */
+
+/**
+ * @brief Turns on LEDs based on external events.
+ */
 void eventConsumerTask(void* _) {
     for (;;) {
-        MyOs_eventWait(&myEvent, 0b11);
-        if (myEvent.flags & 0b01) {
+        MyOs_eventWait(&myEvent, 0b111);
+        if (myEvent.flags & 0b001) {
             gpioToggle(LEDG);
         }
-        if (myEvent.flags & 0b10) {
+        if (myEvent.flags & 0b010) {
             gpioToggle(LEDR);
         }
         if (myEvent.flags & 0b100) {
             gpioToggle(LEDB);
         }
-        MyOs_eventSet(&myEvent, 0x00);
+        MyOs_eventSet(&myEvent, 0x000);
     }
 }
 
+/**
+ * @brief Produces events based on hardware key presses.
+ * 
+ * @param buttonEvt Button/Event pair, @see  __pkg_tec_ev
+ */
+void buttonTask(void* buttonEvt) {
+    uint8_t tec, evt;
+    __unpack_tec_ev(buttonEvt, &tec, &evt);
+    for (;;) {
+        while (gpioRead(tec))
+            ;  // No debounce... but serves its purpose as is.
+        MyOs_eventPost(&myEvent, evt);
+    }
+}
+
+
+/* ************************** Queue Testing Tasks ************************** */
+
+/**
+ * @brief Requests leds to be turned on every 1 second using a queue.
+ */
 void blinkyRequesterTask(void* _) {
-    uint8_t msg = 0;
+    uint8_t ledIndex = 0; // 0 LED1, 1 LED2.
     for(;;) {
-        msg = (msg + 1) % 2;
-        MyOs_queueSend(&myQueue, &msg);
+        ledIndex = (ledIndex + 1) % 2;
+        MyOs_queueSend(&myQueue, &ledIndex);
         MyOs_taskDelay(1000);
     }
 }
 
+/**
+ * @brief Toggles LEDs based on messages read from a queue.
+ */
 void blinkyConsumerTask(void* _) {
     uint8_t msg;
     uint32_t leds[] = {LED1, LED2};
@@ -88,6 +125,8 @@ void blinkyConsumerTask(void* _) {
         gpioToggle(leds[msg]);
     }
 }
+
+/* ************************ Semaphore Testing Tasks ************************ */
 
 void blinkySemaphoreRequesterTask(void* _) {
     for(;;) {
@@ -103,15 +142,6 @@ void blinkySemaphoreConsumerTask(void* _) {
     }
 }
 
-void buttonTask(void* buttonEvt) {
-    uint8_t tec, evt;
-    __unpack_tec_ev(buttonEvt, &tec, &evt);
-    for (;;) {
-        while (gpioRead(tec))
-            ;  // No debounce... but serves its purpose as is.
-        MyOs_eventPost(&myEvent, evt);
-    }
-}
 
 /* ************************************************************************* */
 /*                              Main Definition                              */

@@ -23,8 +23,6 @@ static inline void __MyOs_queuePop(MyOs_Queue_t* queue, void* item) {
     queue->tail = (queue->tail + 1) % queue->length; 
 }
 
-
-
 /* ************************************************************************* */
 /*                              Public Functions                             */
 /* ************************************************************************* */
