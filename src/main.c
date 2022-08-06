@@ -3,13 +3,14 @@
 /* ************************************************************************* */
 #include "main.h"
 
+#include "sapi.h"
+
 #include "MyOs_Event.h"
 #include "MyOs_Queue.h"
 #include "MyOs_Semaphore.h"
 #include "MyOs_Task.h"
 #include "MyOs_Types.h"
 #include "board.h"
-#include "sapi.h"
 
 /* ************************************************************************* */
 /*                           Macros and Definitions                          */

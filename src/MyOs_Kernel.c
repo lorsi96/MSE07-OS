@@ -170,6 +170,15 @@ void MyOs_exitCritical() {
     __enable_irq();
 }
 
+void MyOs_updateState(MyOs_GeneralState_t state) {
+    MyOs_t* self = MyOs_getInstance();
+    self->state = state;
+}
+
+bool MyOs_isContextISR() {
+    return MyOs_getInstance()->state == MY_OS_GENERAL_STATE_IRQ_RUNNING;
+}
+
 /* ****************** Pend SV Interrupt: Context Switcher ****************** */
 uint32_t __MyOs_getNextContext(uint32_t currentSp) {
     MyOs_t* self = MyOs_getInstance();

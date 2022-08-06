@@ -49,6 +49,13 @@ void MyOs_enterCritical();
 void MyOs_exitCritical();
 
 /**
+ * @brief Tells whether the current context is an ISR or not
+ * 
+ * @return true if running an ISR, false otherwise.
+ */
+bool MyOs_isContextISR();
+
+/**
  * @brief Runs code within inside a critical block.
  * 
  */
@@ -71,6 +78,13 @@ MyOs_t* MyOs_getInstance();
  * @param err error type.
  */
 void MyOs_raiseError(void* caller, MyOs_Error_t err);
+
+/**
+ * @brief Updates the operating system state.
+ * 
+ * @param state state to switch to.
+ */
+void MyOs_updateState(MyOs_GeneralState_t state);
 
 /* ************************************************************************* */
 

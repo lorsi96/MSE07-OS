@@ -83,6 +83,8 @@ typedef struct {
 typedef enum {
     MY_OS_GENERAL_STATE_RUN = 0,
     MY_OS_GENERAL_STATE_RESET = 1,
+    MY_OS_GENERAL_STATE_SCHEDULING = 2,
+    MY_OS_GENERAL_STATE_IRQ_RUNNING = 3,
 } MyOs_GeneralState_t;
 
 /**
@@ -100,6 +102,7 @@ typedef enum {
     MY_OS_ERROR_DELETE_NOT_IMPLEMENTED = 7,
     MY_OS_ERROR_MEMORY_ALLOCATION_ERROR = 8,
     MY_OS_ERROR_ZERO_SIZE_QUEUE = 9,
+    MY_OS_ERROR_ISR_INDEX_OUT_OF_RANGE = 10
 } MyOs_Error_t;
 
 /**
@@ -123,6 +126,7 @@ typedef struct {
     bool contextSwitchRequested;
     uint8_t mxPrio;
     int8_t criticalCounter;
+    bool isrSchedulingRequested;
 } MyOs_t;
 /* ************************************************************************* */
 

@@ -62,6 +62,7 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle) {
 
     MyOs_CRITICAL(
         if (taskHandle == NULL) {
+            if(MyOs_isContextISR()) return; // FIXME: do st with this.
             taskId = self->currentTaskId;
         } else {
             taskId = taskHandle->id;
@@ -89,6 +90,9 @@ void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle) {
             }
         }
     );
+    if(MyOs_isContextISR()) {
+        MyOs_getInstance()->isrSchedulingRequested = true;
+    }
 }
 
 void MyOs_taskDelay(const uint32_t ticks) {
