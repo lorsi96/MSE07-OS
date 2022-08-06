@@ -60,30 +60,35 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle) {
     MyOs_t* self = MyOs_getInstance();
     uint8_t taskId;
 
-    if (taskHandle == NULL) {
-        taskId = self->currentTaskId;
-    } else {
-        taskId = taskHandle->id;
-        if (self->tasks[taskId]->priority == 0) {
-            MyOs_raiseError(MyOs_blockTask, MY_OS_ERROR_TASK_ID_BLOCKED);
+    MyOs_CRITICAL(
+        if (taskHandle == NULL) {
+            taskId = self->currentTaskId;
+        } else {
+            taskId = taskHandle->id;
+            if (self->tasks[taskId]->priority == 0) {
+                MyOs_raiseError(MyOs_blockTask, MY_OS_ERROR_TASK_ID_BLOCKED);
+            }
         }
-    }
 
-    if (taskId < self->numberOfTasks) {
-        self->tasks[taskId]->state = MY_OS_TASK_STATE_BLOCKED;
-        if (taskId == self->currentTaskId) {
-            MyOs_yield();
+        if (taskId < self->numberOfTasks) {
+            self->tasks[taskId]->state = MY_OS_TASK_STATE_BLOCKED;
+            if (taskId == self->currentTaskId) {
+                MyOs_yield();
+            }
         }
-    }
+    )
 }
 
 void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle) {
     MyOs_t* self = MyOs_getInstance();
-    if (taskHandle->id < self->numberOfTasks) {
-        if (taskHandle->id != self->currentTaskId) {
-            self->tasks[taskHandle->id]->state = MY_OS_TASK_STATE_READY;
+
+    MyOs_CRITICAL(
+        if (taskHandle->id < self->numberOfTasks) {
+            if (taskHandle->id != self->currentTaskId) {
+                self->tasks[taskHandle->id]->state = MY_OS_TASK_STATE_READY;
+            }
         }
-    }
+    );
 }
 
 void MyOs_taskDelay(const uint32_t ticks) {

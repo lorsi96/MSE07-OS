@@ -88,6 +88,20 @@ static void __MyOs_initIdleTask() {
     MyOS_taskCreate(MyOs_idleTask, NULL, 0xFF, NULL);
 }
 
+static inline void __MyOs_incrementCriticalCounter() {
+    MyOs_t* self = MyOs_getInstance();
+    self->criticalCounter++;
+}
+
+static inline void __MyOs_decrementCriticalCounter() {
+    MyOs_t* self = MyOs_getInstance();
+    self->criticalCounter--;
+    if(self->criticalCounter < 0) {
+       self->criticalCounter = 0; 
+    }
+}
+
+
 /* ************************************************************************* */
 /*                                ISR Handlers                               */
 /* ************************************************************************* */
@@ -136,6 +150,24 @@ void MyOs_yield() {
     if (self->contextSwitchRequested) {
         __MyOs_requestPendSv();
     }
+}
+
+/**
+ * @brief Enters critical section.
+ * 
+ */
+void MyOs_enterCritical() {
+    __disable_irq();
+    __MyOs_incrementCriticalCounter();
+}
+
+/**
+ * @brief Exits critical section.
+ * 
+ */
+void MyOs_exitCritical() {
+    __MyOs_decrementCriticalCounter();
+    __enable_irq();
 }
 
 /* ****************** Pend SV Interrupt: Context Switcher ****************** */

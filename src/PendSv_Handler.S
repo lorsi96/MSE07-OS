@@ -5,6 +5,7 @@
 
 PendSV_Handler:
 
+	cpsid i
 	tst lr,0x10
 	it eq
 	vpusheq {s16-s31}
@@ -18,4 +19,7 @@ PendSV_Handler:
 	tst lr,0x10
 	it eq
 	vpopeq {s16-s31}
+
+	cpsie i
+
 	bx lr				

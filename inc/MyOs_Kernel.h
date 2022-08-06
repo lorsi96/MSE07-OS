@@ -36,6 +36,24 @@ void MyOs_initialize();
  */
 void MyOs_yield();
 
+/**
+ * @brief Enters critical section.
+ * 
+ */
+void MyOs_enterCritical();
+
+/**
+ * @brief Exits critical section.
+ * 
+ */
+void MyOs_exitCritical();
+
+/**
+ * @brief Runs code within inside a critical block.
+ * 
+ */
+#define MyOs_CRITICAL(code) do{MyOs_enterCritical(); code; MyOs_exitCritical();} while(false);
+
 /* ************************************************************************* */
 /*                         Internals Public Functions                        */
 /* ************************************************************************* */

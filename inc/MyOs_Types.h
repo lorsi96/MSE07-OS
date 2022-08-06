@@ -122,6 +122,7 @@ typedef struct {
     MyOs_GeneralState_t state;
     bool contextSwitchRequested;
     uint8_t mxPrio;
+    int8_t criticalCounter;
 } MyOs_t;
 /* ************************************************************************* */
 
