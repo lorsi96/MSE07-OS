@@ -32,7 +32,7 @@ void MyOs_IRQHandler(LPC43XX_IRQn_Type irq) {
     __MyOs_isrVector[irq]();
     MyOs_updateState(osStateBackup);
     NVIC_ClearPendingIRQ(irq);
-    if (MyOs_isContextISR()) {
+    if (MyOs_getInstance()->isrSchedulingRequested) {
         MyOs_getInstance()->isrSchedulingRequested = false; // FIXME: Setter.
         MyOs_yield();
     }

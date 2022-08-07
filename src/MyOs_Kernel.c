@@ -14,6 +14,8 @@
 
 #include "MyOs_Hooks.h"
 #include "MyOs_Task.h"
+#include "MyOs_ISR.h"
+#include "cmsis_43xx.h"
 #include "board.h"
 
 /* ************************************************************************* */

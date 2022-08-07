@@ -10,12 +10,19 @@
 #include "MyOs_Semaphore.h"
 #include "MyOs_Task.h"
 #include "MyOs_Types.h"
+#include "MyOs_ISR.h"
 #include "board.h"
 
 /* ************************************************************************* */
 /*                           Macros and Definitions                          */
 /* ************************************************************************* */
 #define MY_OS_MILLIS 1000
+
+#define TEC1_PORT_NUM   0
+#define TEC1_BIT_VAL    4
+
+#define TEC2_PORT_NUM   0
+#define TEC2_BIT_VAL    8
 
 /* ************************************************************************* */
 /*                       Private Functions Definitions                       */
@@ -28,6 +35,16 @@ static void initHardware(void) {
     Board_Init();
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / MY_OS_MILLIS);
+
+	Chip_SCU_GPIOIntPinSel( 0, TEC1_PORT_NUM, TEC1_BIT_VAL );
+	Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 0 ) ); // INT0 flanco descendente
+	Chip_PININT_SetPinModeEdge( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
+	Chip_PININT_EnableIntLow( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
+
+	Chip_SCU_GPIOIntPinSel( 1, TEC1_PORT_NUM, TEC1_BIT_VAL );
+	Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 1 ) ); // INT1 flanc
+	Chip_PININT_SetPinModeEdge( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
+	Chip_PININT_EnableIntHigh( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 }
 
 void MyOs_errorHook(void* caller, MyOs_Error_t err) {
@@ -85,19 +102,16 @@ void eventConsumerTask(void* _) {
     }
 }
 
-/**
- * @brief Produces events based on hardware key presses.
- * 
- * @param buttonEvt Button/Event pair, @see  __pkg_tec_ev
- */
-void buttonTask(void* buttonEvt) {
-    uint8_t tec, evt;
-    __unpack_tec_ev(buttonEvt, &tec, &evt);
-    for (;;) {
-        while (gpioRead(tec))
-            ;  // No debounce... but serves its purpose as is.
-        MyOs_eventPost(&myEvent, evt);
-    }
+
+void button1ISR() {
+    MyOs_eventPost(&myEvent, 0b001);
+    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
+}
+
+
+void button2ISR() {
+    MyOs_eventPost(&myEvent, 0b010);
+    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 }
 
 
@@ -155,18 +169,6 @@ int main(void) {
 
     MyOs_initialize();
     MyOS_taskCreate(eventConsumerTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
-    MyOS_taskCreate(buttonTask,
-                    /*parameters=*/(void*)__pkg_tec_ev(TEC1, 0b001),
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(buttonTask,
-                    /*parameters=*/(void*)__pkg_tec_ev(TEC2, 0b010),
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(buttonTask,
-                    /*parameters=*/(void*)__pkg_tec_ev(TEC3, 0b100),
-                    /*priority=*/1,  // Won't run!
-                    /*handle=*/NULL);
     MyOS_taskCreate(blinkyRequesterTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
@@ -183,6 +185,8 @@ int main(void) {
                     /*parameters=*/NULL,
                     /*priority=*/2,
                     /*handle=*/NULL);
+    MyOs_installIRQ(PIN_INT0_IRQn, button1ISR);
+    MyOs_installIRQ(PIN_INT1_IRQn, button2ISR);
     for (;;)
         ;
 }
