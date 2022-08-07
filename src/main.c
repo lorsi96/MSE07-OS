@@ -69,153 +69,74 @@ MyOs_semaphore_CREATE_STATIC(mySemaphore);
 /* ************************************************************************* */
 /*                          Utilities for Test Tasks                         */
 /* ************************************************************************* */
+typedef struct {
+    uint8_t inv_id;
+    uint8_t sensor_id; 
+    uint32_t periodMs;
+} SensorConfig_t;
 
-/* *********** Functions for packing/unpacking buttons and events ********** */
-uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) { return (tec << 8) | evt; }
-
-void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
-    *tec = (uint16_t)packed >> 8;
-    *evt = (uint16_t)packed & 0xFF;
-}
-
-void __MyOs_queueSendString(const char* str, MyOs_Queue_t* uartQueue) {
-    for(uint8_t i = 0; str[i] != '\0'; i++) {
-        MyOs_queueSend(uartQueue, &str[i]);
-    }    
-}
-
-
-#define __array_to_queue_args(arr)  sizeof(arr)/sizeof(arr[0]), sizeof(arr[0]), arr 
-
-/* ************************************************************************* */
-/*                             Tasks Definitions                             */
-/* ************************************************************************* */
-
-/* ************************** Events Testing Tasks ************************* */
-
-/**
- * @brief Turns on LEDs based on external events.
- */
-void eventConsumerTask(void* _) {
-    for (;;) {
-        MyOs_eventWait(&myEvent, 0b111);
-        if (myEvent.flags & 0b001) {
-            __MyOs_queueSendString("Green LED On", &uartQueue);
-            gpioToggle(LEDG);
-        }
-        if (myEvent.flags & 0b010) {
-            __MyOs_queueSendString("Red LED On", &uartQueue);
-            gpioToggle(LEDR);
-        }
-        if (myEvent.flags & 0b100) {
-            __MyOs_queueSendString("Blue LED On", &uartQueue);
-            gpioToggle(LEDB);
-        }
-        MyOs_eventSet(&myEvent, 0x000);
-    }
-}
-
-
-void button1ISR() {
-    MyOs_eventPost(&myEvent, 0b001);
-    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
-}
-
-
-void button2ISR() {
-    MyOs_eventPost(&myEvent, 0b010);
-    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
-}
-
-
-/* ************************** Queue Testing Tasks ************************** */
-
-/**
- * @brief Requests leds to be turned on every 1 second using a queue.
- */
-void blinkyRequesterTask(void* _) {
-    uint8_t ledIndex = 0; // 0 LED1, 1 LED2.
+void humiditySensorTask(void* sensorCfg) {
+    SensorConfig_t* _sensorCfg = sensorCfg;
+    char MSG_TEMPLATE[] = "[INVERNADERO:00][HUM:1][55\045]\n\r"; 
+    MSG_TEMPLATE[14] = _sensorCfg->sensor_id + '0';
+    MSG_TEMPLATE[21] = _sensorCfg->inv_id + '0';
+    char buffer[sizeof(MSG_TEMPLATE)];
+    uint8_t hum = 0;
     for(;;) {
-        ledIndex = (ledIndex + 1) % 2;
-        MyOs_queueSend(&myQueue, &ledIndex);
-        MyOs_taskDelay(1000);
-    }
+        hum = (hum + 7) % 100;
+        MyOs_enterCritical();
+        uartWriteByteArray(UART_USB, MSG_TEMPLATE, sizeof(MSG_TEMPLATE));
+        MyOs_exitCritical();
+        MyOs_taskDelay(_sensorCfg->periodMs);
+    }   
 }
 
-/**
- * @brief Toggles LEDs based on messages read from a queue.
- */
-void blinkyConsumerTask(void* _) {
-    uint8_t msg;
-    uint32_t leds[] = {LED1, LED2};
+void temperatureSensorTask(void* sensorCfg) {
+    SensorConfig_t* _sensorCfg = sensorCfg;
+    char MSG_TEMPLATE[] = "[INVERNADERO:00][TEMP:1][27.5 C]\n\r"; 
+    MSG_TEMPLATE[14] = _sensorCfg->sensor_id + '0';
+    MSG_TEMPLATE[22] = _sensorCfg->inv_id + '0';
+    char buffer[sizeof(MSG_TEMPLATE)];
+    uint8_t hum = 0;
     for(;;) {
-        MyOs_queueReceive(&myQueue, &msg);
-        gpioToggle(leds[msg]);
-    }
+        hum = (hum + 7) % 100;
+        MyOs_enterCritical();
+        uartWriteByteArray(UART_USB, MSG_TEMPLATE, sizeof(MSG_TEMPLATE));
+        MyOs_exitCritical();
+        MyOs_taskDelay(_sensorCfg->periodMs);
+    }   
 }
-
-/* ************************ Semaphore Testing Tasks ************************ */
-
-void blinkySemaphoreRequesterTask(void* _) {
-    for(;;) {
-        MyOs_semaphoreGive(&mySemaphore);
-        MyOs_taskDelay(1000);
-    }
-}
-
-void blinkySemaphoreConsumerTask(void* _) {
-    for(;;) {
-        MyOs_semaphoreTake(&mySemaphore);
-        gpioToggle(LED3);
-    }
-}
-
-
-/* ******************************* Uart Task ******************************* */
-void uartSenderTask(void* _) {
-    char item;
-    for(;;) {
-        MyOs_queueReceive(&uartQueue, &item);
-        uartWriteByte(UART_USB, item);
-    }
-}
-
-
 
 /* ************************************************************************* */
 /*                              Main Definition                              */
 /* ************************************************************************* */
 
 int main(void) {
+    const SensorConfig_t hum1 = {
+        .inv_id = 1,
+        .sensor_id = 1,
+        .periodMs = 100
+    };
+
+    const SensorConfig_t hum2 = {
+        .inv_id = 2,
+        .sensor_id = 2,
+        .periodMs = 200
+    };
+
+    const SensorConfig_t temp2 = {
+        .inv_id = 3,
+        .sensor_id = 1,
+        .periodMs = 250
+    };
+
     initHardware();
-
-    MyOs_eventCreate(&myEvent);
-
     MyOs_initialize();
-    MyOS_taskCreate(eventConsumerTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
-    MyOS_taskCreate(blinkyRequesterTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(blinkyConsumerTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(blinkySemaphoreRequesterTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(blinkySemaphoreConsumerTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(uartSenderTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    
-    MyOs_installIRQ(PIN_INT0_IRQn, button1ISR);
-    MyOs_installIRQ(PIN_INT1_IRQn, button2ISR);
+
+    MyOS_taskCreate(humiditySensorTask, &hum1, 3, NULL);
+    MyOS_taskCreate(humiditySensorTask, &hum2, 3, NULL);
+    MyOS_taskCreate(temperatureSensorTask, &temp2, 3, NULL);
+
     for (;;)
         ;
 }
