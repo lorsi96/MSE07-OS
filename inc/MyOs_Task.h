@@ -51,6 +51,12 @@ MyOs_TaskHandle_t MyOs_getCurrentTask();
  */
 void MyOs_taskDelay(const uint32_t ticks);
 
+/**
+ * @brief Updates a task priority
+ * 
+ */
+void MyOs_taskSetPriority(MyOs_TaskHandle_t taskHandle, uint8_t priority);
+
 
 /**
  * @brief Suspends a given task.

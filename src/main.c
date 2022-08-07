@@ -67,6 +67,7 @@ void MyOs_errorHook(void* caller, MyOs_Error_t err) {
 /* ************************************************************************* */
 MyOs_Event_t myEvent;
 MyOs_TaskHandle_t taskHandle;
+MyOs_TaskHandle_t taskSemHandle;
 MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
 MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
 MyOs_semaphore_CREATE_STATIC(mySemaphore);
@@ -135,10 +136,11 @@ void buttonUpISR() {
 
 
 void button2ISR() {
-    static bool suspend = true;
-    MyOs_eventPost(&myEvent, 0b100);
-    if(suspend) MyOs_suspendTask(taskHandle); else MyOs_resumeTask(taskHandle);
-    suspend = !suspend;
+    static bool flag = true;
+    if(flag) MyOs_suspendTask(taskHandle); else MyOs_resumeTask(taskHandle);
+    if(!flag) MyOs_taskSetPriority(taskSemHandle, 1); else MyOs_taskSetPriority(taskSemHandle, 2);
+
+    flag = !flag;
     Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
 }
 
@@ -224,7 +226,7 @@ int main(void) {
     MyOS_taskCreate(blinkySemaphoreConsumerTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
-                    /*handle=*/NULL);
+                    /*handle=*/&taskSemHandle);
     MyOS_taskCreate(uartSenderTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,

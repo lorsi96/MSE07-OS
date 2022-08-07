@@ -40,10 +40,7 @@ void MyOS_taskCreate(const void* taskCode, void* parameters, uint8_t priority,
     self->tasks[self->numberOfTasks] = __MyOs_taskNew();
     MyOs_TCB_t* tcb = self->tasks[self->numberOfTasks];
     tcb->id = self->numberOfTasks++;
-    tcb->priority = priority + 1;
-    if (tcb->priority > self->mxPrio) {
-        self->mxPrio = tcb->priority;
-    }
+    MyOs_taskSetPriority(tcb, priority);
 
     __MyOs_initTaskStack(tcb, taskCode, parameters);
     if (handle != NULL) {
@@ -147,13 +144,22 @@ void MyOs_taskDelay(const uint32_t ticks) {
     }
 }
 
+
+void MyOs_taskSetPriority(MyOs_TaskHandle_t taskHandle, uint8_t priority) {
+    MyOs_t* self = MyOs_getInstance();
+    taskHandle->priority = priority + 1;
+    if (taskHandle->priority > self->mxPrio) {
+        self->mxPrio = taskHandle->priority;
+    }
+}
+
 /* ************************************************************************* */
 /*                       Private Functions Definitions                       */
 /* ************************************************************************* */
 
 /* *************************** Memory Management *************************** */
 MyOs_TaskHandle_t __MyOs_taskNew() {
-#ifdef MY_OS_USE_DYNAMIC_MEMORY
+#ifdef MY_OS_DYNAMIC_TASK_ALLOCATION
     MyOs_TaskHandle_t task;
     if (!(task = calloc(sizeof(MyOs_TCB_t), 1))) {
         MyOs_memoryInsufficientHook(MyOS_taskCreate);
