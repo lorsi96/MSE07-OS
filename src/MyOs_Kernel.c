@@ -159,7 +159,9 @@ void MyOs_yield() {
  * 
  */
 void MyOs_enterCritical() {
-    __disable_irq();
+    if (MyOs_getInstance()->criticalCounter == 0) {
+        __disable_irq();
+    }
     __MyOs_incrementCriticalCounter();
 }
 
@@ -169,7 +171,9 @@ void MyOs_enterCritical() {
  */
 void MyOs_exitCritical() {
     __MyOs_decrementCriticalCounter();
-    __enable_irq();
+    if (MyOs_getInstance()->criticalCounter == 0) {
+        __enable_irq();
+    }
 }
 
 void MyOs_updateState(MyOs_GeneralState_t state) {
