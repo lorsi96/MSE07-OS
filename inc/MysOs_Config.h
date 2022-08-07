@@ -17,7 +17,7 @@
 #define MAX_TASKS_N 10
 #define STACK_SIZE 64
 #define MY_OS_TEST_MODE
-// #define MY_OS_USE_DYNAMIC_MEMORY // Not yet 100% supported
+#define MY_OS_USE_DYNAMIC_MEMORY // Not yet 100% supported
 
 /* ****************************** End Of File ****************************** */
 #endif
