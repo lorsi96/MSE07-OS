@@ -45,6 +45,8 @@ static void initHardware(void) {
 	Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 1 ) ); // INT1 flanc
 	Chip_PININT_SetPinModeEdge( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 	Chip_PININT_EnableIntHigh( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
+
+    uartConfig( UART_USB, 115200 );
 }
 
 void MyOs_errorHook(void* caller, MyOs_Error_t err) {
@@ -60,6 +62,7 @@ void MyOs_errorHook(void* caller, MyOs_Error_t err) {
 /* ************************************************************************* */
 MyOs_Event_t myEvent;
 MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
+MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
 MyOs_semaphore_CREATE_STATIC(mySemaphore);
 
 
@@ -74,6 +77,13 @@ void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
     *tec = (uint16_t)packed >> 8;
     *evt = (uint16_t)packed & 0xFF;
 }
+
+void __MyOs_queueSendString(const char* str, MyOs_Queue_t* uartQueue) {
+    for(uint8_t i = 0; str[i] != '\0'; i++) {
+        MyOs_queueSend(uartQueue, &str[i]);
+    }    
+}
+
 
 #define __array_to_queue_args(arr)  sizeof(arr)/sizeof(arr[0]), sizeof(arr[0]), arr 
 
@@ -90,12 +100,15 @@ void eventConsumerTask(void* _) {
     for (;;) {
         MyOs_eventWait(&myEvent, 0b111);
         if (myEvent.flags & 0b001) {
+            __MyOs_queueSendString("Green LED On", &uartQueue);
             gpioToggle(LEDG);
         }
         if (myEvent.flags & 0b010) {
+            __MyOs_queueSendString("Red LED On", &uartQueue);
             gpioToggle(LEDR);
         }
         if (myEvent.flags & 0b100) {
+            __MyOs_queueSendString("Blue LED On", &uartQueue);
             gpioToggle(LEDB);
         }
         MyOs_eventSet(&myEvent, 0x000);
@@ -158,6 +171,17 @@ void blinkySemaphoreConsumerTask(void* _) {
 }
 
 
+/* ******************************* Uart Task ******************************* */
+void uartSenderTask(void* _) {
+    char item;
+    for(;;) {
+        MyOs_queueReceive(&uartQueue, &item);
+        uartWriteByte(UART_USB, item);
+    }
+}
+
+
+
 /* ************************************************************************* */
 /*                              Main Definition                              */
 /* ************************************************************************* */
@@ -185,6 +209,11 @@ int main(void) {
                     /*parameters=*/NULL,
                     /*priority=*/2,
                     /*handle=*/NULL);
+    MyOS_taskCreate(uartSenderTask,
+                    /*parameters=*/NULL,
+                    /*priority=*/2,
+                    /*handle=*/NULL);
+    
     MyOs_installIRQ(PIN_INT0_IRQn, button1ISR);
     MyOs_installIRQ(PIN_INT1_IRQn, button2ISR);
     for (;;)

@@ -97,6 +97,9 @@ void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle) {
 
 void MyOs_taskDelay(const uint32_t ticks) {
     MyOs_TaskHandle_t currentTask = MyOs_getCurrentTask();
+    if (MyOs_isContextISR()) {
+        MyOs_raiseError(MyOs_taskDelay, MY_OS_ERROR_DELAY_FROM_ISR);
+    }
     currentTask->delayCount = ticks;
     currentTask->state = MY_OS_TASK_STATE_BLOCKED;
     MyOs_yield();
