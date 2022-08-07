@@ -56,7 +56,7 @@ MyOs_TaskHandle_t MyOs_getCurrentTask() {
     return self->tasks[self->currentTaskId];
 }
 
-void MyOs_blockTask(MyOs_TaskHandle_t taskHandle) {
+void MyOs_blockTask(MyOs_TaskHandle_t taskHandle, uint32_t msToWait) {
     MyOs_t* self = MyOs_getInstance();
     uint8_t taskId;
 
@@ -73,6 +73,7 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle) {
 
         if (taskId < self->numberOfTasks) {
             self->tasks[taskId]->state = MY_OS_TASK_STATE_BLOCKED;
+            self->tasks[taskId]->delayCount = msToWait;
             if (taskId == self->currentTaskId) {
                 MyOs_yield();
             }

@@ -50,7 +50,7 @@ static void __MyOs_scheduler() {
     for (uint8_t p = self->mxPrio; p >= 0; p--) {
         uint8_t firstPTaskId = 0xFF;
         uint8_t nTasks = 0;
-        do { // TODO: Implement a better scheduler (but this one works!). 
+        do {
             if (self->tasks[candidateTaskId]->priority == p) {
                 if (firstPTaskId == 0xFF) firstPTaskId = candidateTaskId;
                 switch (self->tasks[candidateTaskId]->state) {

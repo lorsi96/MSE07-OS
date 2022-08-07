@@ -56,7 +56,7 @@ void MyOs_taskDelay(const uint32_t ticks);
  *
  * @param taskHandle task to be blocked.
  */
-void MyOs_blockTask(MyOs_TaskHandle_t taskHandle);
+void MyOs_blockTask(MyOs_TaskHandle_t taskHandle, uint32_t msToWait);
 
 /**
  * @brief Unblocks a given task.

@@ -98,7 +98,7 @@ void __MyOs_queueSendString(const char* str, MyOs_Queue_t* uartQueue) {
  */
 void eventConsumerTask(void* _) {
     for (;;) {
-        MyOs_eventWait(&myEvent, 0b111);
+        MyOs_eventWait(&myEvent, 0b111, MY_OS_MAX_DELAY);
         if (myEvent.flags & 0b001) {
             __MyOs_queueSendString("Green LED On", &uartQueue);
             gpioToggle(LEDG);
@@ -149,7 +149,7 @@ void blinkyConsumerTask(void* _) {
     uint8_t msg;
     uint32_t leds[] = {LED1, LED2};
     for(;;) {
-        MyOs_queueReceive(&myQueue, &msg);
+        MyOs_queueReceive(&myQueue, &msg, MY_OS_MAX_DELAY);
         gpioToggle(leds[msg]);
     }
 }
@@ -165,7 +165,7 @@ void blinkySemaphoreRequesterTask(void* _) {
 
 void blinkySemaphoreConsumerTask(void* _) {
     for(;;) {
-        MyOs_semaphoreTake(&mySemaphore);
+        MyOs_semaphoreTake(&mySemaphore, MY_OS_MAX_DELAY);
         gpioToggle(LED3);
     }
 }
@@ -175,7 +175,7 @@ void blinkySemaphoreConsumerTask(void* _) {
 void uartSenderTask(void* _) {
     char item;
     for(;;) {
-        MyOs_queueReceive(&uartQueue, &item);
+        MyOs_queueReceive(&uartQueue, &item, MY_OS_MAX_DELAY);
         uartWriteByte(UART_USB, item);
     }
 }

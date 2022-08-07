@@ -66,9 +66,9 @@ void MyOs_semaphoreGive(MyOs_Semaphore_t* semaphore) {
  * 
  * @param semaphore 
  */
-void MyOs_semaphoreTake(MyOs_Semaphore_t* semaphore) {
+void MyOs_semaphoreTake(MyOs_Semaphore_t* semaphore, uint32_t msToWait) {
     static uint8_t _;
-    MyOs_queueReceive(semaphore, &_);
+    MyOs_queueReceive(semaphore, &_, msToWait);
 }
 
 /* ************************************************************************* */

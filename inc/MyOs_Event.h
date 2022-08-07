@@ -81,7 +81,7 @@ void MyOs_eventPost(MyOs_Event_t* ev, uint8_t flags);
  * @param ev initialized event object.
  * @param flags relevant event flags to wait for.
  */
-void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags);
+void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags, uint32_t msToWait);
 
 /**
  * @brief Blocks task until agoup of events occur.
@@ -93,7 +93,7 @@ void MyOs_eventWait(MyOs_Event_t* ev, uint8_t flags);
  * @param ev initialized event object.
  * @param flags exact event to wait for.
  */
-void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags);
+void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags, uint32_t msToWait);
 
 /* ************************************************************************* */
 

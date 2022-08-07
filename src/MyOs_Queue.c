@@ -32,7 +32,7 @@ void MyOs_queueSend(MyOs_Queue_t* queue, const void* item) {
     /* If queue is full, wait until some other task consumes an element.*/
     while((queue->head + 1) % queue->length == queue->tail) { 
         queue->waitingTask = MyOs_getCurrentTask();
-        MyOs_blockTask(NULL);
+        MyOs_blockTask(NULL, MY_OS_MAX_DELAY);
     }
 
     __MyOs_queuePush(queue, item);
@@ -44,12 +44,12 @@ void MyOs_queueSend(MyOs_Queue_t* queue, const void* item) {
 }
 
 
-void MyOs_queueReceive(MyOs_Queue_t* queue, void* item) {
+void MyOs_queueReceive(MyOs_Queue_t* queue, void* item, uint32_t msToWait) {
     
     /* If queue is empty, wait until some other task consumes an element.*/
     while(queue->head == queue->tail) { 
         queue->waitingTask = MyOs_getCurrentTask();
-        MyOs_blockTask(NULL);
+        MyOs_blockTask(NULL, msToWait);
     }
 
     __MyOs_queuePop(queue, item);

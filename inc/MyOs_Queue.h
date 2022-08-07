@@ -80,7 +80,7 @@ void MyOs_queueSend(MyOs_Queue_t* queue, const void* item);
  * @param[in] queue target queue.
  * @param[out] item received from the queue. 
  */
-void MyOs_queueReceive(MyOs_Queue_t* queue, void* item);
+void MyOs_queueReceive(MyOs_Queue_t* queue, void* item, uint32_t msToWait);
 
 /* ************************************************************************* */
 
