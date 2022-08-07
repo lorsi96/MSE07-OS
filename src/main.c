@@ -46,6 +46,11 @@ static void initHardware(void) {
 	Chip_PININT_SetPinModeEdge( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 	Chip_PININT_EnableIntHigh( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 
+	Chip_SCU_GPIOIntPinSel( 2, TEC2_PORT_NUM, TEC2_BIT_VAL );
+	Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
+	Chip_PININT_SetPinModeEdge( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
+	Chip_PININT_EnableIntLow( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
+
     uartConfig( UART_USB, 115200 );
 }
 
@@ -61,6 +66,7 @@ void MyOs_errorHook(void* caller, MyOs_Error_t err) {
 /*                              Sync Primitives                              */
 /* ************************************************************************* */
 MyOs_Event_t myEvent;
+MyOs_TaskHandle_t taskHandle;
 MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
 MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
 MyOs_semaphore_CREATE_STATIC(mySemaphore);
@@ -116,17 +122,25 @@ void eventConsumerTask(void* _) {
 }
 
 
-void button1ISR() {
+void buttonDownISR() {
     MyOs_eventPost(&myEvent, 0b001);
     Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
 }
 
 
-void button2ISR() {
+void buttonUpISR() {
     MyOs_eventPost(&myEvent, 0b010);
     Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 }
 
+
+void button2ISR() {
+    static bool suspend = true;
+    MyOs_eventPost(&myEvent, 0b100);
+    if(suspend) MyOs_suspendTask(taskHandle); else MyOs_resumeTask(taskHandle);
+    suspend = !suspend;
+    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
+}
 
 /* ************************** Queue Testing Tasks ************************** */
 
@@ -192,7 +206,9 @@ int main(void) {
     MyOs_eventCreate(&myEvent);
 
     MyOs_initialize();
-    MyOS_taskCreate(eventConsumerTask, /*parameters=*/NULL, 2, /*handle=*/NULL);
+    MyOS_taskCreate(eventConsumerTask, 
+                    /*parameters=*/NULL, 2, 
+                    /*handle=*/NULL);
     MyOS_taskCreate(blinkyRequesterTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
@@ -200,7 +216,7 @@ int main(void) {
     MyOS_taskCreate(blinkyConsumerTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
-                    /*handle=*/NULL);
+                    /*handle=*/&taskHandle);
     MyOS_taskCreate(blinkySemaphoreRequesterTask,
                     /*parameters=*/NULL,
                     /*priority=*/2,
@@ -214,8 +230,9 @@ int main(void) {
                     /*priority=*/2,
                     /*handle=*/NULL);
     
-    MyOs_installIRQ(PIN_INT0_IRQn, button1ISR);
-    MyOs_installIRQ(PIN_INT1_IRQn, button2ISR);
+    MyOs_installIRQ(PIN_INT0_IRQn, buttonDownISR);
+    MyOs_installIRQ(PIN_INT1_IRQn, buttonUpISR);
+    MyOs_installIRQ(PIN_INT2_IRQn, button2ISR);
     for (;;)
         ;
 }

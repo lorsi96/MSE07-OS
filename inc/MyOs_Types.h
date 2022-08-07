@@ -62,6 +62,7 @@ typedef enum {
     MY_OS_TASK_STATE_READY = 0,
     MY_OS_TASK_STATE_RUNNING = 1,
     MY_OS_TASK_STATE_BLOCKED = 2,
+    MY_OS_TASK_STATE_SUSPENDED = 3,
 } MyOs_TaskState_t;
 
 /**

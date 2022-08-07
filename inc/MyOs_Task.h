@@ -51,6 +51,27 @@ MyOs_TaskHandle_t MyOs_getCurrentTask();
  */
 void MyOs_taskDelay(const uint32_t ticks);
 
+
+/**
+ * @brief Suspends a given task.
+ *
+ * @param taskHandle task to be suspended.
+ */
+void MyOs_suspendTask(MyOs_TaskHandle_t taskHandle);
+
+/**
+ * @brief Resumes a given task.
+ *
+ * @param taskHandle task to be resumed.
+ */
+void MyOs_resumeTask(MyOs_TaskHandle_t taskHandle);
+
+
+
+/* ************************************************************************* */
+/*                        Public OS Internal Functions                       */
+/* ************************************************************************* */
+
 /**
  * @brief Blocks a given task.
  *
