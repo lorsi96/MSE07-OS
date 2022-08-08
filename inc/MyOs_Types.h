@@ -74,6 +74,7 @@ typedef struct {
     uint32_t stack_pointer;
     uint8_t id;
     MyOs_TaskState_t state;
+    MyOs_TaskState_t state_before_suspension;
     uint8_t priority;
     uint32_t delayCount;
 } MyOs_TCB_t;

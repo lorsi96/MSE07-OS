@@ -67,6 +67,7 @@ void MyOs_suspendTask(MyOs_TaskHandle_t taskHandle) {
         }
 
         if (taskId < self->numberOfTasks) {
+            self->tasks[taskId]->state_before_suspension =  self->tasks[taskId]->state;
             self->tasks[taskId]->state = MY_OS_TASK_STATE_SUSPENDED;
             if (taskId == self->currentTaskId) {
                 MyOs_yield();
@@ -81,7 +82,7 @@ void MyOs_resumeTask(MyOs_TaskHandle_t taskHandle) {
     MyOs_CRITICAL(
         if (taskHandle->id < self->numberOfTasks) {
             if ((taskHandle->state == MY_OS_TASK_STATE_SUSPENDED)) {
-                self->tasks[taskHandle->id]->state = MY_OS_TASK_STATE_READY;
+                self->tasks[taskHandle->id]->state = self->tasks[taskHandle->id]->state_before_suspension;
             }
         }
     );

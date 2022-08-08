@@ -80,24 +80,25 @@ static void initHardware(void) {
 /* ************************************************************************* */
 /*                              Sync Primitives                              */
 /* ************************************************************************* */
-MyOs_Event_t myEvent;
-MyOs_TaskHandle_t taskHandle;
-MyOs_TaskHandle_t taskSemHandle;
+MyOs_Event_t taskSuspentionEvent;
+MyOs_TaskHandle_t humidityTaskHandle;
+MyOs_TaskHandle_t temperatureTaskHandle;
 MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
 MyOs_queue_CREATE_STATIC(sensorDataQueue, SensorData_t, 5);
 MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
 MyOs_semaphore_CREATE_STATIC(mySemaphore);
 
 
-void buttonDownISR() {
+
+void tec1DownIsr() {
+    MyOs_eventPost(&taskSuspentionEvent, 0b10);
+    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
 }
 
 
-void buttonUpISR() {
-}
-
-
-void button2ISR() {
+void tec2DownIsr() {
+    MyOs_eventPost(&taskSuspentionEvent, 0b01);
+    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
 }
 
 /* ******************************* Uart Task ******************************* */
@@ -136,6 +137,22 @@ void sensorDataSerializerTask(void* _) {
         for(char i=0; currentMsg[i] !='\0'; i++) {
             MyOs_queueSend(&uartQueue, &currentMsg[i]);
         }
+    }
+}
+
+void tasksSuspenderTask(void* _) {
+    bool isTaskSuspended[] = {false, false};
+    for(;;) {
+        MyOs_eventWait(&taskSuspentionEvent, 0b111, MY_OS_MAX_DELAY);
+        if(taskSuspentionEvent.flags & 0b001) {
+            isTaskSuspended[0] ? MyOs_resumeTask(humidityTaskHandle) : MyOs_suspendTask(humidityTaskHandle);
+            isTaskSuspended[0] = !isTaskSuspended[0];
+        }
+        if(taskSuspentionEvent.flags & 0b010) {
+            isTaskSuspended[1] ? MyOs_resumeTask(temperatureTaskHandle) : MyOs_suspendTask(temperatureTaskHandle);
+            isTaskSuspended[1] = !isTaskSuspended[1];
+        }
+        MyOs_eventSet(&taskSuspentionEvent, 0b000);
     }
 }
 
@@ -182,13 +199,18 @@ int main(void) {
         .type = SENSOR_TYPE_TMP
     };
 
+    MyOs_eventCreate(&taskSuspentionEvent);
+
     initHardware();
     MyOs_initialize();
     MyOS_taskCreate(uartSenderTask, NULL, 3, NULL);
     MyOS_taskCreate(sensorDataSerializerTask, NULL, 3, NULL);
-    MyOS_taskCreate(sensorTask, &hum1, 3, NULL);
-    MyOS_taskCreate(sensorTask, &hum2, 3, NULL);
-    MyOS_taskCreate(sensorTask, &temp2, 3, NULL);
+    MyOS_taskCreate(tasksSuspenderTask, NULL, 3, NULL);
+    MyOS_taskCreate(sensorTask, &hum2, 3, &humidityTaskHandle);
+    MyOS_taskCreate(sensorTask, &temp2, 3, &temperatureTaskHandle);
+        
+    MyOs_installIRQ(PIN_INT0_IRQn, tec1DownIsr);
+    MyOs_installIRQ(PIN_INT2_IRQn, tec2DownIsr);
 
     for (;;)
         ;
