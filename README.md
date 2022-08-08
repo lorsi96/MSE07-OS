@@ -16,4 +16,17 @@ cd workspace
 ./tools/ciaa-tools --flash .
 ```
 
+## Demo Program
+### Introduction
+The demo program is a simple `Greenhouse Simulator` that simulates humidity and
+temperature measurements. It does so using multiple tasks,  queues, events, task suspension, 
+hardware interruptions, delays, UART messaging and more. 
+### Architecture.
+The architecture of the application is shown in the following image.
+![diagram](./doc/diagram.png)
+### Demo
+![demo](./doc/demo.gif)
+
+
+
 
