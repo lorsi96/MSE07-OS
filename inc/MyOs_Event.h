@@ -97,7 +97,7 @@ void MyOs_eventWaitAll(MyOs_Event_t* ev, uint8_t flags, uint32_t msToWait);
 
 /* ************************************************************************* */
 
-/** 
+/**
  * @}
  */
 

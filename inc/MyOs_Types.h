@@ -25,7 +25,7 @@
 #define STACK_FRAME_SIZE 8
 #define FULL_REG_STACKING_SIZE (STACK_FRAME_SIZE + 8 + 1)
 
-#define MY_OS_MAX_DELAY  0
+#define MY_OS_MAX_DELAY 0
 /* ************************************************************************* */
 /*                                   Types                                   */
 /* ************************************************************************* */

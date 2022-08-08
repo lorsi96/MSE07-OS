@@ -53,40 +53,36 @@ MyOs_TaskHandle_t MyOs_getCurrentTask() {
     return self->tasks[self->currentTaskId];
 }
 
-
 void MyOs_suspendTask(MyOs_TaskHandle_t taskHandle) {
     MyOs_t* self = MyOs_getInstance();
     uint8_t taskId;
 
     MyOs_CRITICAL(
         if (taskHandle == NULL) {
-            if(MyOs_isContextISR()) return; // Cannot suspend current on isr.
+            if (MyOs_isContextISR()) return;  // Cannot suspend current on isr.
             taskId = self->currentTaskId;
-        } else {
-            taskId = taskHandle->id;
-        }
+        } else { taskId = taskHandle->id; }
 
         if (taskId < self->numberOfTasks) {
-            self->tasks[taskId]->state_before_suspension =  self->tasks[taskId]->state;
+            self->tasks[taskId]->state_before_suspension =
+                self->tasks[taskId]->state;
             self->tasks[taskId]->state = MY_OS_TASK_STATE_SUSPENDED;
             if (taskId == self->currentTaskId) {
                 MyOs_yield();
             }
-        }
-    )
+        });
 }
 
 void MyOs_resumeTask(MyOs_TaskHandle_t taskHandle) {
     MyOs_t* self = MyOs_getInstance();
 
-    MyOs_CRITICAL(
-        if (taskHandle->id < self->numberOfTasks) {
-            if ((taskHandle->state == MY_OS_TASK_STATE_SUSPENDED)) {
-                self->tasks[taskHandle->id]->state = self->tasks[taskHandle->id]->state_before_suspension;
-            }
+    MyOs_CRITICAL(if (taskHandle->id < self->numberOfTasks) {
+        if ((taskHandle->state == MY_OS_TASK_STATE_SUSPENDED)) {
+            self->tasks[taskHandle->id]->state =
+                self->tasks[taskHandle->id]->state_before_suspension;
         }
-    );
-    if(MyOs_isContextISR()) {
+    });
+    if (MyOs_isContextISR()) {
         MyOs_getInstance()->isrSchedulingRequested = true;
     }
 }
@@ -97,7 +93,7 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle, uint32_t msToWait) {
 
     MyOs_CRITICAL(
         if (taskHandle == NULL) {
-            if(MyOs_isContextISR()) return; // FIXME: do st with this.
+            if (MyOs_isContextISR()) return;  // FIXME: do st with this.
             taskId = self->currentTaskId;
         } else {
             taskId = taskHandle->id;
@@ -113,7 +109,7 @@ void MyOs_blockTask(MyOs_TaskHandle_t taskHandle, uint32_t msToWait) {
                 MyOs_yield();
             }
         }
-    )
+    );
 }
 
 void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle) {
@@ -121,12 +117,13 @@ void MyOs_unblockTask(MyOs_TaskHandle_t taskHandle) {
 
     MyOs_CRITICAL(
         if (taskHandle->id < self->numberOfTasks) {
-            if ((taskHandle->state == MY_OS_TASK_STATE_BLOCKED) && (taskHandle->id != self->currentTaskId)) {
+            if ((taskHandle->state == MY_OS_TASK_STATE_BLOCKED) &&
+                (taskHandle->id != self->currentTaskId)) {
                 self->tasks[taskHandle->id]->state = MY_OS_TASK_STATE_READY;
             }
         }
     );
-    if(MyOs_isContextISR()) {
+    if (MyOs_isContextISR()) {
         MyOs_getInstance()->isrSchedulingRequested = true;
     }
 }
@@ -144,7 +141,6 @@ void MyOs_taskDelay(const uint32_t ticks) {
                         MY_OS_ERROR_TASK_CALLED_BEFORE_DELAY_FINISHED);
     }
 }
-
 
 void MyOs_taskSetPriority(MyOs_TaskHandle_t taskHandle, uint8_t priority) {
     MyOs_t* self = MyOs_getInstance();

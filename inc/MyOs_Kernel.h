@@ -38,28 +38,33 @@ void MyOs_yield();
 
 /**
  * @brief Enters critical section.
- * 
+ *
  */
 void MyOs_enterCritical();
 
 /**
  * @brief Exits critical section.
- * 
+ *
  */
 void MyOs_exitCritical();
 
 /**
  * @brief Tells whether the current context is an ISR or not
- * 
+ *
  * @return true if running an ISR, false otherwise.
  */
 bool MyOs_isContextISR();
 
 /**
  * @brief Runs code within inside a critical block.
- * 
+ *
  */
-#define MyOs_CRITICAL(code) do{MyOs_enterCritical(); code; MyOs_exitCritical();} while(false);
+#define MyOs_CRITICAL(code)   \
+    do {                      \
+        MyOs_enterCritical(); \
+        code;                 \
+        MyOs_exitCritical();  \
+    } while (false);
 
 /* ************************************************************************* */
 /*                         Internals Public Functions                        */
@@ -81,7 +86,7 @@ void MyOs_raiseError(void* caller, MyOs_Error_t err);
 
 /**
  * @brief Updates the operating system state.
- * 
+ *
  * @param state state to switch to.
  */
 void MyOs_updateState(MyOs_GeneralState_t state);

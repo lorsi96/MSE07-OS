@@ -13,10 +13,10 @@
 #include <stdlib.h>
 
 #include "MyOs_Hooks.h"
-#include "MyOs_Task.h"
 #include "MyOs_ISR.h"
-#include "cmsis_43xx.h"
+#include "MyOs_Task.h"
 #include "board.h"
+#include "cmsis_43xx.h"
 
 /* ************************************************************************* */
 /*                             Private Functions                             */
@@ -58,7 +58,7 @@ static void __MyOs_scheduler() {
                         self->nextTaskId = candidateTaskId;
                         self->contextSwitchRequested = true;
                         return;  // Next task found.
-                    case MY_OS_TASK_STATE_BLOCKED: 
+                    case MY_OS_TASK_STATE_BLOCKED:
                     case MY_OS_TASK_STATE_SUSPENDED:
                         break;
                     case MY_OS_TASK_STATE_RUNNING:
@@ -99,11 +99,10 @@ static inline void __MyOs_incrementCriticalCounter() {
 static inline void __MyOs_decrementCriticalCounter() {
     MyOs_t* self = MyOs_getInstance();
     self->criticalCounter--;
-    if(self->criticalCounter < 0) {
-       self->criticalCounter = 0; 
+    if (self->criticalCounter < 0) {
+        self->criticalCounter = 0;
     }
 }
-
 
 /* ************************************************************************* */
 /*                                ISR Handlers                               */
@@ -157,7 +156,7 @@ void MyOs_yield() {
 
 /**
  * @brief Enters critical section.
- * 
+ *
  */
 void MyOs_enterCritical() {
     if (MyOs_getInstance()->criticalCounter == 0) {
@@ -168,7 +167,7 @@ void MyOs_enterCritical() {
 
 /**
  * @brief Exits critical section.
- * 
+ *
  */
 void MyOs_exitCritical() {
     __MyOs_decrementCriticalCounter();

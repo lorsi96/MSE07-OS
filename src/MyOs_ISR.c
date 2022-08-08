@@ -1,11 +1,11 @@
 #include "MyOs_ISR.h"
 
-#define IRQ_N  53
+#define IRQ_N 53
 
 static MyOs_IsrFunction __MyOs_isrVector[IRQ_N] = {NULL};
 
 bool MyOs_installIRQ(LPC43XX_IRQn_Type irq, MyOs_IsrFunction isr_fun) {
-    if(__MyOs_isrVector[irq] == NULL) {
+    if (__MyOs_isrVector[irq] == NULL) {
         __MyOs_isrVector[irq] = isr_fun;
         NVIC_ClearPendingIRQ(irq);
         NVIC_EnableIRQ(irq);
@@ -16,7 +16,7 @@ bool MyOs_installIRQ(LPC43XX_IRQn_Type irq, MyOs_IsrFunction isr_fun) {
 }
 
 bool MyOs_uninstallIRQ(LPC43XX_IRQn_Type irq) {
-    if(__MyOs_isrVector[irq] != NULL) {
+    if (__MyOs_isrVector[irq] != NULL) {
         __MyOs_isrVector[irq] = NULL;
         NVIC_ClearPendingIRQ(irq);
         NVIC_DisableIRQ(irq);
@@ -27,23 +27,23 @@ bool MyOs_uninstallIRQ(LPC43XX_IRQn_Type irq) {
 }
 
 void MyOs_IRQHandler(LPC43XX_IRQn_Type irq) {
-    MyOs_GeneralState_t osStateBackup = MyOs_getInstance()->state; //FIXME: Getter.
+    MyOs_GeneralState_t osStateBackup =
+        MyOs_getInstance()->state;  // FIXME: Getter.
     MyOs_updateState(MY_OS_GENERAL_STATE_IRQ_RUNNING);
     __MyOs_isrVector[irq]();
     MyOs_updateState(osStateBackup);
     NVIC_ClearPendingIRQ(irq);
     if (MyOs_getInstance()->isrSchedulingRequested) {
-        MyOs_getInstance()->isrSchedulingRequested = false; // FIXME: Setter.
+        MyOs_getInstance()->isrSchedulingRequested = false;  // FIXME: Setter.
         MyOs_yield();
     }
 }
 
-
 /* ************************************************************************* */
 /*                                IRQ Wrappers                               */
 /* ************************************************************************* */
-#define __DECL_IRQ_WRAPPER(name, type)  \
-    void name##_IRQHandler(void) {MyOs_IRQHandler(type##_IRQn);}
+#define __DECL_IRQ_WRAPPER(name, type) \
+    void name##_IRQHandler(void) { MyOs_IRQHandler(type##_IRQn); }
 
 __DECL_IRQ_WRAPPER(DAC, DAC);
 __DECL_IRQ_WRAPPER(M0APP, M0APP);

@@ -53,10 +53,9 @@ void MyOs_taskDelay(const uint32_t ticks);
 
 /**
  * @brief Updates a task priority
- * 
+ *
  */
 void MyOs_taskSetPriority(MyOs_TaskHandle_t taskHandle, uint8_t priority);
-
 
 /**
  * @brief Suspends a given task.
@@ -71,8 +70,6 @@ void MyOs_suspendTask(MyOs_TaskHandle_t taskHandle);
  * @param taskHandle task to be resumed.
  */
 void MyOs_resumeTask(MyOs_TaskHandle_t taskHandle);
-
-
 
 /* ************************************************************************* */
 /*                        Public OS Internal Functions                       */
