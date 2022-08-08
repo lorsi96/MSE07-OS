@@ -25,6 +25,28 @@
 #define TEC2_BIT_VAL    8
 
 /* ************************************************************************* */
+/*                                 DataTypes                                 */
+/* ************************************************************************* */
+typedef enum {
+    SENSOR_TYPE_HUM,
+    SENSOR_TYPE_TMP,
+} SensorType_t;
+
+typedef struct {
+    uint8_t greenhouseId;
+    uint8_t sensorId; 
+    uint32_t periodMs;
+    SensorType_t type;
+} SensorConfig_t;
+
+typedef struct {
+    SensorType_t type;
+    uint8_t greenhouseId;
+    uint8_t sensorId;
+    uint32_t sensorData;
+} SensorData_t;
+
+/* ************************************************************************* */
 /*                       Private Functions Definitions                       */
 /* ************************************************************************* */
 
@@ -54,13 +76,6 @@ static void initHardware(void) {
     uartConfig( UART_USB, 115200 );
 }
 
-void MyOs_errorHook(void* caller, MyOs_Error_t err) {
-    gpioWrite(LED3, 1);
-    for (;;)
-        ;
-}
-
-
 
 /* ************************************************************************* */
 /*                              Sync Primitives                              */
@@ -69,123 +84,21 @@ MyOs_Event_t myEvent;
 MyOs_TaskHandle_t taskHandle;
 MyOs_TaskHandle_t taskSemHandle;
 MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
+MyOs_queue_CREATE_STATIC(sensorDataQueue, SensorData_t, 5);
 MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
 MyOs_semaphore_CREATE_STATIC(mySemaphore);
 
 
-/* ************************************************************************* */
-/*                          Utilities for Test Tasks                         */
-/* ************************************************************************* */
-
-/* *********** Functions for packing/unpacking buttons and events ********** */
-uint16_t __pkg_tec_ev(uint8_t tec, uint8_t evt) { return (tec << 8) | evt; }
-
-void __unpack_tec_ev(void* packed, uint8_t* tec, uint8_t* evt) {
-    *tec = (uint16_t)packed >> 8;
-    *evt = (uint16_t)packed & 0xFF;
-}
-
-void __MyOs_queueSendString(const char* str, MyOs_Queue_t* uartQueue) {
-    for(uint8_t i = 0; str[i] != '\0'; i++) {
-        MyOs_queueSend(uartQueue, &str[i]);
-    }    
-}
-
-
-#define __array_to_queue_args(arr)  sizeof(arr)/sizeof(arr[0]), sizeof(arr[0]), arr 
-
-/* ************************************************************************* */
-/*                             Tasks Definitions                             */
-/* ************************************************************************* */
-
-/* ************************** Events Testing Tasks ************************* */
-
-/**
- * @brief Turns on LEDs based on external events.
- */
-void eventConsumerTask(void* _) {
-    for (;;) {
-        MyOs_eventWait(&myEvent, 0b111, MY_OS_MAX_DELAY);
-        if (myEvent.flags & 0b001) {
-            __MyOs_queueSendString("Green LED On", &uartQueue);
-            gpioToggle(LEDG);
-        }
-        if (myEvent.flags & 0b010) {
-            __MyOs_queueSendString("Red LED On", &uartQueue);
-            gpioToggle(LEDR);
-        }
-        if (myEvent.flags & 0b100) {
-            __MyOs_queueSendString("Blue LED On", &uartQueue);
-            gpioToggle(LEDB);
-        }
-        MyOs_eventSet(&myEvent, 0x000);
-    }
-}
-
-
 void buttonDownISR() {
-    MyOs_eventPost(&myEvent, 0b001);
-    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 0 ) );
 }
 
 
 void buttonUpISR() {
-    MyOs_eventPost(&myEvent, 0b010);
-    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 1 ) );
 }
 
 
 void button2ISR() {
-    static bool flag = true;
-    if(flag) MyOs_suspendTask(taskHandle); else MyOs_resumeTask(taskHandle);
-    if(!flag) MyOs_taskSetPriority(taskSemHandle, 1); else MyOs_taskSetPriority(taskSemHandle, 2);
-
-    flag = !flag;
-    Chip_PININT_ClearIntStatus( LPC_GPIO_PIN_INT, PININTCH( 2 ) );
 }
-
-/* ************************** Queue Testing Tasks ************************** */
-
-/**
- * @brief Requests leds to be turned on every 1 second using a queue.
- */
-void blinkyRequesterTask(void* _) {
-    uint8_t ledIndex = 0; // 0 LED1, 1 LED2.
-    for(;;) {
-        ledIndex = (ledIndex + 1) % 2;
-        MyOs_queueSend(&myQueue, &ledIndex);
-        MyOs_taskDelay(1000);
-    }
-}
-
-/**
- * @brief Toggles LEDs based on messages read from a queue.
- */
-void blinkyConsumerTask(void* _) {
-    uint8_t msg;
-    uint32_t leds[] = {LED1, LED2};
-    for(;;) {
-        MyOs_queueReceive(&myQueue, &msg, MY_OS_MAX_DELAY);
-        gpioToggle(leds[msg]);
-    }
-}
-
-/* ************************ Semaphore Testing Tasks ************************ */
-
-void blinkySemaphoreRequesterTask(void* _) {
-    for(;;) {
-        MyOs_semaphoreGive(&mySemaphore);
-        MyOs_taskDelay(1000);
-    }
-}
-
-void blinkySemaphoreConsumerTask(void* _) {
-    for(;;) {
-        MyOs_semaphoreTake(&mySemaphore, MY_OS_MAX_DELAY);
-        gpioToggle(LED3);
-    }
-}
-
 
 /* ******************************* Uart Task ******************************* */
 void uartSenderTask(void* _) {
@@ -196,45 +109,87 @@ void uartSenderTask(void* _) {
     }
 }
 
+void sensorDataSerializerTask(void* _) {
+    char MSG_HUM_BASE[] = "[GREENHOUSE:00?][HUM:0?][??\045]\n\r"; 
+    char MSG_TMP_BASE[] = "[GREENHOUSE:00?][TEMPERATURE:0?][?? C]\n\r";
+    char* currentMsg = NULL;
+    uint8_t currentMsgLen = 0;
+    SensorData_t sensorData;
+    for(;;) {
+        MyOs_queueReceive(&sensorDataQueue, &sensorData, MY_OS_MAX_DELAY);
+        if(sensorData.type == SENSOR_TYPE_HUM) {
+            currentMsg = MSG_HUM_BASE;
+            currentMsgLen = sizeof(MSG_HUM_BASE);
+            MSG_HUM_BASE[14] = sensorData.greenhouseId + '0';
+            MSG_HUM_BASE[22] = sensorData.sensorId + '0';
+            MSG_HUM_BASE[25] = (sensorData.sensorData % 100) / 10 + '0';
+            MSG_HUM_BASE[26] = sensorData.sensorData % 10 + '0';
+        }
+        if(sensorData.type == SENSOR_TYPE_TMP) {
+            currentMsg = MSG_TMP_BASE;
+            currentMsgLen = sizeof(MSG_TMP_BASE);
+            MSG_TMP_BASE[14] = sensorData.greenhouseId + '0';
+            MSG_TMP_BASE[30] = sensorData.sensorId + '0';
+            MSG_TMP_BASE[33] = (sensorData.sensorData % 100) / 10 + '0';
+            MSG_TMP_BASE[34] = sensorData.sensorData % 10 + '0';
+        }
+        for(char i=0; currentMsg[i] !='\0'; i++) {
+            MyOs_queueSend(&uartQueue, &currentMsg[i]);
+        }
+    }
+}
 
+
+/* ************************************************************************* */
+/*                          Utilities for Test Tasks                         */
+/* ************************************************************************* */
+void sensorTask(void* sensorCfg) {
+    SensorConfig_t* _sensorCfg = sensorCfg;
+    SensorData_t data;
+    data.greenhouseId = _sensorCfg->greenhouseId;
+    data.sensorId = _sensorCfg->sensorId;
+    data.type = _sensorCfg->type;
+    for(;;) {
+        data.sensorData = 50;
+        MyOs_queueSend(&sensorDataQueue, &data);
+        MyOs_taskDelay(_sensorCfg->periodMs);
+    }   
+}
 
 /* ************************************************************************* */
 /*                              Main Definition                              */
 /* ************************************************************************* */
 
 int main(void) {
+    const SensorConfig_t hum1 = {
+        .greenhouseId = 1,
+        .sensorId = 1,
+        .periodMs = 100,
+        .type = SENSOR_TYPE_HUM
+    };
+
+    const SensorConfig_t hum2 = {
+        .greenhouseId = 2,
+        .sensorId = 2,
+        .periodMs = 200,
+        .type = SENSOR_TYPE_HUM
+    };
+
+    const SensorConfig_t temp2 = {
+        .greenhouseId = 3,
+        .sensorId = 1,
+        .periodMs = 250,
+        .type = SENSOR_TYPE_TMP
+    };
+
     initHardware();
-
-    MyOs_eventCreate(&myEvent);
-
     MyOs_initialize();
-    MyOS_taskCreate(eventConsumerTask, 
-                    /*parameters=*/NULL, 2, 
-                    /*handle=*/NULL);
-    MyOS_taskCreate(blinkyRequesterTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(blinkyConsumerTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/&taskHandle);
-    MyOS_taskCreate(blinkySemaphoreRequesterTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    MyOS_taskCreate(blinkySemaphoreConsumerTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/&taskSemHandle);
-    MyOS_taskCreate(uartSenderTask,
-                    /*parameters=*/NULL,
-                    /*priority=*/2,
-                    /*handle=*/NULL);
-    
-    MyOs_installIRQ(PIN_INT0_IRQn, buttonDownISR);
-    MyOs_installIRQ(PIN_INT1_IRQn, buttonUpISR);
-    MyOs_installIRQ(PIN_INT2_IRQn, button2ISR);
+    MyOS_taskCreate(uartSenderTask, NULL, 3, NULL);
+    MyOS_taskCreate(sensorDataSerializerTask, NULL, 3, NULL);
+    MyOS_taskCreate(sensorTask, &hum1, 3, NULL);
+    MyOS_taskCreate(sensorTask, &hum2, 3, NULL);
+    MyOS_taskCreate(sensorTask, &temp2, 3, NULL);
+
     for (;;)
         ;
 }
