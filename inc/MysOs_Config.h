@@ -14,7 +14,7 @@
 /* ************************************************************************* */
 /*                             MyOs Configuration                            */
 /* ************************************************************************* */
-#define MAX_TASKS_N 10
+#define MAX_TASKS_N 20
 #define STACK_SIZE 64
 #define MY_OS_TEST_MODE
 #define MY_OS_DYNAMIC_TASK_ALLOCATION

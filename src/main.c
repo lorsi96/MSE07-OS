@@ -4,6 +4,7 @@
 #include "main.h"
 
 #include "sapi.h"
+#include "sapi_rtc.h"
 
 #include "MyOs_Event.h"
 #include "MyOs_Queue.h"
@@ -23,6 +24,9 @@
 
 #define TEC2_PORT_NUM   0
 #define TEC2_BIT_VAL    8
+
+#define HUM_SENSORS_N   2
+#define TEMP_SENSORS_N  3
 
 /* ************************************************************************* */
 /*                                 DataTypes                                 */
@@ -81,14 +85,13 @@ static void initHardware(void) {
 /*                              Sync Primitives                              */
 /* ************************************************************************* */
 MyOs_Event_t taskSuspentionEvent;
-MyOs_TaskHandle_t humidityTaskHandle;
-MyOs_TaskHandle_t temperatureTaskHandle;
-MyOs_queue_CREATE_STATIC(myQueue, uint32_t, 5);
+MyOs_TaskHandle_t humidityTaskHandles[HUM_SENSORS_N];
+MyOs_TaskHandle_t temperatureTaskHandles[TEMP_SENSORS_N];
+SensorConfig_t hum[HUM_SENSORS_N];
+SensorConfig_t temp[TEMP_SENSORS_N];
+
 MyOs_queue_CREATE_STATIC(sensorDataQueue, SensorData_t, 5);
 MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
-MyOs_semaphore_CREATE_STATIC(mySemaphore);
-
-
 
 void tec1DownIsr() {
     MyOs_eventPost(&taskSuspentionEvent, 0b10);
@@ -111,12 +114,21 @@ void uartSenderTask(void* _) {
 }
 
 void sensorDataSerializerTask(void* _) {
+    rtc_t someRtc;
+    char MSG_TIME_BASE[] = "[??:??:??]";
     char MSG_HUM_BASE[] = "[GREENHOUSE:00?][HUM:0?][??\045]\n\r"; 
     char MSG_TMP_BASE[] = "[GREENHOUSE:00?][TEMPERATURE:0?][?? C]\n\r";
     char* currentMsg = NULL;
     uint8_t currentMsgLen = 0;
     SensorData_t sensorData;
     for(;;) {
+        rtcRead(&someRtc);
+        MSG_TIME_BASE[7] = (someRtc.sec % 100) / 10 + '0';
+        MSG_TIME_BASE[8] = (someRtc.sec % 10) + '0';
+        MSG_TIME_BASE[4] = (someRtc.min % 100) / 10 + '0';
+        MSG_TIME_BASE[5] = (someRtc.min % 10) + '0';
+        MSG_TIME_BASE[1] = (someRtc.hour % 100) / 10 + '0';
+        MSG_TIME_BASE[2] = (someRtc.hour % 10) + '0';
         MyOs_queueReceive(&sensorDataQueue, &sensorData, MY_OS_MAX_DELAY);
         if(sensorData.type == SENSOR_TYPE_HUM) {
             currentMsg = MSG_HUM_BASE;
@@ -134,23 +146,38 @@ void sensorDataSerializerTask(void* _) {
             MSG_TMP_BASE[33] = (sensorData.sensorData % 100) / 10 + '0';
             MSG_TMP_BASE[34] = sensorData.sensorData % 10 + '0';
         }
+        for(char i=0; MSG_TIME_BASE[i] !='\0'; i++) {
+            MyOs_queueSend(&uartQueue, &MSG_TIME_BASE[i]);
+        }
         for(char i=0; currentMsg[i] !='\0'; i++) {
             MyOs_queueSend(&uartQueue, &currentMsg[i]);
         }
     }
 }
 
+static inline void applyToHumiditySensorsTasks(void(*func)(MyOs_TaskHandle_t)) {
+    for(uint8_t i=0; i<HUM_SENSORS_N; i++) {
+        func(humidityTaskHandles[i]);
+    }
+}
+
+static inline void applyToTemperatureSensorsTasks(void(*func)(MyOs_TaskHandle_t)) {
+    for(uint8_t i=0; i<TEMP_SENSORS_N; i++) {
+        func(temperatureTaskHandles[i]);
+    }
+}
+
 void tasksSuspenderTask(void* _) {
-    bool isTaskSuspended[] = {false, false};
+    bool isTaskGroupSuspended[] = {false, false};
     for(;;) {
         MyOs_eventWait(&taskSuspentionEvent, 0b111, MY_OS_MAX_DELAY);
         if(taskSuspentionEvent.flags & 0b001) {
-            isTaskSuspended[0] ? MyOs_resumeTask(humidityTaskHandle) : MyOs_suspendTask(humidityTaskHandle);
-            isTaskSuspended[0] = !isTaskSuspended[0];
+            isTaskGroupSuspended[0] ? applyToHumiditySensorsTasks(MyOs_resumeTask) : applyToHumiditySensorsTasks(MyOs_suspendTask);
+            isTaskGroupSuspended[0] = !isTaskGroupSuspended[0];
         }
         if(taskSuspentionEvent.flags & 0b010) {
-            isTaskSuspended[1] ? MyOs_resumeTask(temperatureTaskHandle) : MyOs_suspendTask(temperatureTaskHandle);
-            isTaskSuspended[1] = !isTaskSuspended[1];
+            isTaskGroupSuspended[1] ? applyToTemperatureSensorsTasks(MyOs_resumeTask) : applyToTemperatureSensorsTasks(MyOs_suspendTask);
+            isTaskGroupSuspended[1] = !isTaskGroupSuspended[1];
         }
         MyOs_eventSet(&taskSuspentionEvent, 0b000);
     }
@@ -167,7 +194,7 @@ void sensorTask(void* sensorCfg) {
     data.sensorId = _sensorCfg->sensorId;
     data.type = _sensorCfg->type;
     for(;;) {
-        data.sensorData = 50;
+        data.sensorData = 20 + (rand() % 5);
         MyOs_queueSend(&sensorDataQueue, &data);
         MyOs_taskDelay(_sensorCfg->periodMs);
     }   
@@ -178,37 +205,32 @@ void sensorTask(void* sensorCfg) {
 /* ************************************************************************* */
 
 int main(void) {
-    const SensorConfig_t hum1 = {
-        .greenhouseId = 1,
-        .sensorId = 1,
-        .periodMs = 100,
-        .type = SENSOR_TYPE_HUM
-    };
-
-    const SensorConfig_t hum2 = {
-        .greenhouseId = 2,
-        .sensorId = 2,
-        .periodMs = 200,
-        .type = SENSOR_TYPE_HUM
-    };
-
-    const SensorConfig_t temp2 = {
-        .greenhouseId = 3,
-        .sensorId = 1,
-        .periodMs = 250,
-        .type = SENSOR_TYPE_TMP
-    };
-
-    MyOs_eventCreate(&taskSuspentionEvent);
+    uint8_t ids = 0;
 
     initHardware();
     MyOs_initialize();
+    MyOs_eventCreate(&taskSuspentionEvent);
+    MyOS_taskCreate(tasksSuspenderTask, NULL, 3, NULL);
     MyOS_taskCreate(uartSenderTask, NULL, 3, NULL);
     MyOS_taskCreate(sensorDataSerializerTask, NULL, 3, NULL);
-    MyOS_taskCreate(tasksSuspenderTask, NULL, 3, NULL);
-    MyOS_taskCreate(sensorTask, &hum2, 3, &humidityTaskHandle);
-    MyOS_taskCreate(sensorTask, &temp2, 3, &temperatureTaskHandle);
-        
+    
+    for(uint8_t i=0; i<HUM_SENSORS_N; i++) {
+        ids++;
+        hum[i].greenhouseId = ids;
+        hum[i].sensorId = ids;
+        hum[i].periodMs = 300 * (rand() % 10);
+        hum[i].type = SENSOR_TYPE_HUM;
+        MyOS_taskCreate(sensorTask, &hum[i], 3, &humidityTaskHandles[i]);
+    }
+    for(uint8_t i=0; i<TEMP_SENSORS_N; i++) {
+        ids++;
+        temp[i].greenhouseId = ids;
+        temp[i].sensorId = ids;
+        temp[i].periodMs = 100 * (rand() % 10);
+        temp[i].type = SENSOR_TYPE_TMP;
+        MyOS_taskCreate(sensorTask, &temp[i], 3, &temperatureTaskHandles[i]);
+    }
+
     MyOs_installIRQ(PIN_INT0_IRQn, tec1DownIsr);
     MyOs_installIRQ(PIN_INT2_IRQn, tec2DownIsr);
 
