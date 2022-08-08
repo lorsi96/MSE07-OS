@@ -8,6 +8,11 @@
 #include "board.h"
 #include "cmsis_43xx.h"
 
+
+/** @addtogroup MyOs_ISR
+ * @{
+ */
+
 /* ************************************************************************* */
 /*                                   Types                                   */
 /* ************************************************************************* */
@@ -21,4 +26,9 @@ bool MyOs_installIRQ(LPC43XX_IRQn_Type irq, MyOs_IsrFunction isr_fun);
 bool MyOs_uninstallIRQ(LPC43XX_IRQn_Type irq);
 
 /* ************************************************************************* */
+
+/** 
+ * @}
+ */
+
 #endif
