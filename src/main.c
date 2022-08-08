@@ -61,22 +61,25 @@ static void initHardware(void) {
     SystemCoreClockUpdate();
     SysTick_Config(SystemCoreClock / MY_OS_MILLIS);
 
+    /*TEC1 - Falling Edge. */
     Chip_SCU_GPIOIntPinSel(0, TEC1_PORT_NUM, TEC1_BIT_VAL);
-    Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT,
-                               PININTCH(0));  // INT0 flanco descendente
+    Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0)); 
     Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(0));
     Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(0));
 
+    /*TEC1 - Rising Edge. */
     Chip_SCU_GPIOIntPinSel(1, TEC1_PORT_NUM, TEC1_BIT_VAL);
-    Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));  // INT1 flanc
+    Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(1));
     Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(1));
     Chip_PININT_EnableIntHigh(LPC_GPIO_PIN_INT, PININTCH(1));
 
+    /*TEC2 - Falling Edge. */
     Chip_SCU_GPIOIntPinSel(2, TEC2_PORT_NUM, TEC2_BIT_VAL);
     Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(2));
     Chip_PININT_SetPinModeEdge(LPC_GPIO_PIN_INT, PININTCH(2));
     Chip_PININT_EnableIntLow(LPC_GPIO_PIN_INT, PININTCH(2));
 
+    /*UART. */
     uartConfig(UART_USB, 115200);
 }
 
@@ -88,10 +91,12 @@ MyOs_TaskHandle_t humidityTaskHandles[HUM_SENSORS_N];
 MyOs_TaskHandle_t temperatureTaskHandles[TEMP_SENSORS_N];
 SensorConfig_t hum[HUM_SENSORS_N];
 SensorConfig_t temp[TEMP_SENSORS_N];
-
 MyOs_queue_CREATE_STATIC(sensorDataQueue, SensorData_t, 5);
 MyOs_queue_CREATE_STATIC(uartQueue, char, 5);
 
+/* ************************************************************************* */
+/*                                    ISRs                                   */
+/* ************************************************************************* */
 void tec1DownIsr() {
     MyOs_eventPost(&taskSuspentionEvent, 0b10);
     Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(0));
@@ -102,7 +107,27 @@ void tec2DownIsr() {
     Chip_PININT_ClearIntStatus(LPC_GPIO_PIN_INT, PININTCH(2));
 }
 
-/* ******************************* Uart Task ******************************* */
+/* ************************************************************************* */
+/*                                 Utilities                                 */
+/* ************************************************************************* */
+
+static inline void applyToHumiditySensorsTasks(
+    void (*func)(MyOs_TaskHandle_t)) {
+    for (uint8_t i = 0; i < HUM_SENSORS_N; i++) {
+        func(humidityTaskHandles[i]);
+    }
+}
+
+static inline void applyToTemperatureSensorsTasks(
+    void (*func)(MyOs_TaskHandle_t)) {
+    for (uint8_t i = 0; i < TEMP_SENSORS_N; i++) {
+        func(temperatureTaskHandles[i]);
+    }
+}
+
+/* ************************************************************************* */
+/*                                   Tasks                                   */
+/* ************************************************************************* */
 void uartSenderTask(void* _) {
     char item;
     for (;;) {
@@ -153,20 +178,6 @@ void sensorDataSerializerTask(void* _) {
     }
 }
 
-static inline void applyToHumiditySensorsTasks(
-    void (*func)(MyOs_TaskHandle_t)) {
-    for (uint8_t i = 0; i < HUM_SENSORS_N; i++) {
-        func(humidityTaskHandles[i]);
-    }
-}
-
-static inline void applyToTemperatureSensorsTasks(
-    void (*func)(MyOs_TaskHandle_t)) {
-    for (uint8_t i = 0; i < TEMP_SENSORS_N; i++) {
-        func(temperatureTaskHandles[i]);
-    }
-}
-
 void tasksSuspenderTask(void* _) {
     bool isTaskGroupSuspended[] = {false, false};
     for (;;) {
@@ -187,9 +198,6 @@ void tasksSuspenderTask(void* _) {
     }
 }
 
-/* ************************************************************************* */
-/*                          Utilities for Test Tasks                         */
-/* ************************************************************************* */
 void sensorTask(void* sensorCfg) {
     SensorConfig_t* _sensorCfg = sensorCfg;
     SensorData_t data;
